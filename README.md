@@ -1,4 +1,4 @@
-# Coolscript: Python Aesthetics, C++ Performance, Go Simplicity
+# Coolscript: Python Aesthetics, C++ Performance, Go Simplicity, Rust Safety
 
 Coolscript (`.cool`) is a statically typed, natively compiled, resource-oriented programming language. It is built for developers who want the **readability of Python** and the **concurrency of Go**, but require the **deterministic performance and memory safety of Rust** without the complexity of a borrow checker or the overhead of a Garbage Collector (GC).
 
