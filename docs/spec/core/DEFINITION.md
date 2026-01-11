@@ -19,7 +19,7 @@ Coolscript follows several strict design principles to achieve high performance 
 
 ## Memory Management and Ownership
 
-Coolscript replaces the traditional borrow checker with a model based on **Linear Types** and **Generational References**. This provides Rust-level safety with a significantly lower learning curve.
+Coolscript replaces the traditional borrow checker with a model based on **Linear Types** and **Region Analysis**. This provides Rust-level safety with a significantly lower learning curve.
 
 ### The Move-by-Default Model
 
@@ -30,31 +30,33 @@ By default, passing a variable to a function or assigning it to another variable
 To ensure readability and prevent "where did my variable go" confusion, moves and copies must be explicit at the call-site.
 
 * **View (Default)**: If no keyword is used, the compiler attempts to create a read-only view. The original variable remains valid and owned by the caller.
+* **inout**: The `inout` keyword allows a function to modify a variable owned by the caller. Semantically, this is "Copy-In, Copy-Out": the value is moved in, modified, and moved back. The compiler optimizes this to a pointer reference for large types or register manipulation for small types. While an `inout` access is active, the caller cannot access the original variable (Exclusivity Rule).
 * **Move**: The `move` keyword explicitly transfers ownership. The caller can no longer use the variable.
-* **Copy**: The `copy` keyword creates a bitwise or deep duplicate (depending on the type). The caller retains the original.
+* **Copy**: The `copy` keyword creates a duplicate of the value.
+    *   If the type implements the **`Copy`** protocol (e.g., primitives like `i32`, `bool`), it performs a bitwise copy.
+    *   If the type implements the **`Clone`** protocol (e.g., `List`, `str`), it invokes the `.clone()` method for a deep copy.
+    *   If the type implements neither (e.g., a `FileHandle`), using `copy` is a **Compile-Time Error**. This prevents accidental resource duplication and double-free bugs.
 
 **Example:**
 
 ```python
+fn increment(val: inout i32):
+    val += 1
+
 fn process_user(u: move User):
     # This function now owns 'u'
     print(u.name)
     # 'u' is destroyed here
 
 fn main():
+    let count = 10
+    increment(inout count) # count is now 11
+    
     let admin = User(name="Alice", age=30)
     
     # Explicit move: readability tells us 'admin' is gone after this
     process_user(move admin)
-    
-    # print(admin.name) 
-    # COMPILER ERROR: Variable 'admin' was burned at line 12
-
 ```
-
-### Generational References
-
-To handle cases where the compiler cannot prove a view is safe at compile-time, Coolscript uses **Generational References**. Every memory allocation is assigned a generation number. A reference consists of the raw pointer plus the generation ID. If the memory is freed and reallocated, the generation ID increments. If a stale reference tries to access that memory, the IDs will not match, preventing use-after-free bugs. The compiler optimizes 99% of these checks away, leaving a tiny runtime check only where necessary.
 
 ---
 
@@ -62,11 +64,54 @@ To handle cases where the compiler cannot prove a view is safe at compile-time, 
 
 A **View** is a temporary, read-only permission to access data. It is the Coolscript alternative to borrowing.
 
+### Transient Structs (Option C)
+
+Coolscript allows structs to contain `view` fields. However, any struct that contains a `view` is implicitly marked as **transient**.
+
+**The Transience Rule:**
+1.  A transient struct cannot outlive the data it views.
+2.  A transient struct cannot be stored in a non-transient struct or a global variable.
+3.  A transient struct cannot be moved into an Isolate (`spawn`).
+
+This pattern is ideal for "Context Objects," "Iterators," or "Slices" that package multiple references to be passed down the stack during a single operation.
+
+```python
+struct StringCursor:
+    buffer: view str
+    pos: i32
+
+fn process(c: view StringCursor):
+    print(c.buffer[c.pos])
+
+fn main():
+    let s = "Hello"
+    let cursor = StringCursor(buffer=view s, pos=0)
+    process(view cursor)
+```
+
 ### The No-Escape Rule
 
-To keep the language simpler than Rust, Coolscript enforces the **No-Escape Rule**: Views cannot be stored in structs or global variables. They can only exist on the call stack (as function arguments or local variables).
+To keep the language simpler than Rust, Coolscript enforces the **No-Escape Rule**: Views and Transient Structs cannot be stored in long-lived heaps or globals. They are strictly bound to the stack frame.
 
-If a piece of data needs to persist inside a struct (e.g., adding a User to a List), it must be moved into the struct. This eliminates the need for complex lifetime annotations like `<'a>` because the compiler always knows that a view is bound to the current execution frame.
+If a piece of data needs to persist inside a permanent struct (e.g., adding a User to a List), it must be moved into the struct.
+
+---
+
+## Data Structures and Graphs (Option A)
+
+Because Coolscript enforces a tree-like ownership model, creating cycles (like Parent-Child pointers or Graphs) using raw references is not allowed for permanent data.
+
+**Idiomatic Graph Implementation:**
+For long-lived graphs, Coolscript recommends the **Managed Index** pattern. Store nodes in a `List[Node]` and refer to them using `i32` indices. This is 100% memory-safe, has zero GC overhead, and avoids ownership cycles.
+
+```python
+struct Node:
+    id: i32
+    parent_index: i32 # Reference via Index
+
+struct Forest:
+    nodes: List[Node]
+```
 
 ---
 
@@ -287,22 +332,93 @@ fn main():
 
 ### Channels
 
+
+
 Channels facilitate communication between tasks. Sending a value through a channel moves the ownership from the sender to the receiver.
 
+
+
 ```python
+
 fn producer(ch: move Channel[i32]):
+
     let val = 42
+
     ch.send(move val)
 
+
+
 fn consumer(ch: view Channel[i32]):
+
     # .receive() returns an opt[T]
+
     if let val = ch.receive():
+
         print("Received: " + str(val))
 
+
+
 fn main():
+
     let ch = Channel[i32](capacity=5)
+
     spawn producer(move ch.clone_sender())
+
     consumer(view ch)
+
+```
+
+
+
+### Shared Ownership (shared[T])
+
+
+
+To efficiently share large, read-only data (like configuration or game assets) across hundreds of tasks without copying, Coolscript provides the `shared[T]` wrapper.
+
+
+
+*   **Atomic Reference Counting**: `shared[T]` uses an atomic counter. Cloning the handle is cheap (increment integer).
+
+*   **Immutable**: Data inside a `shared` handle is strictly read-only.
+
+*   **Spawn-Safe**: Unlike standard views, `shared` handles can be safely moved or copied into `spawn` tasks.
+
+
+
+```python
+
+struct Config:
+
+    theme: str
+
+
+
+fn worker(cfg: move shared[Config]):
+
+    # Read-only access to underlying data
+
+    print(cfg.theme)
+
+
+
+fn main():
+
+    # Wrap the data. 'shared' takes ownership.
+
+    let config = shared(Config(theme="Dark"))
+
+
+
+    for i in 0..10:
+
+        # 'copy' creates a new handle (increments ref count)
+
+        spawn worker(copy config)
+
+    
+
+    # original 'config' is burned here when scope ends
 
 ```
 
@@ -310,19 +426,63 @@ fn main():
 
 ## Error Handling
 
+
+
 Coolscript avoids exceptions. Instead, it uses a `Result[T, E]` type and a `try` keyword for ergonomic error propagation.
 
+
+
+### The `try` Block
+
+
+
+Used when you want to handle the error locally.
+
+
+
 ```python
+
 fn open_file(path: str) -> Result[File, IOError]:
+
     # Returns the File (Ok) or an IOError (Err)
+
     pass
 
+
+
 fn main():
+
     # The 'try' block triggers on the 'Err' case
+
     let f = open_file("data.txt") try (err):
+
         print("Error: Could not open file: " + err.message)
+
         return
+
     # 'f' is now a valid File object if 'try' didn't trigger the block
+
+```
+
+
+
+### The Propagation Operator (`?`)
+
+
+
+Used when you want to bubble the error up to the caller. This is syntactic sugar for `try (e): return Err(e)`.
+
+
+
+```python
+
+fn read_config() -> Result[str, IOError]:
+
+    # If open_file fails, the error is immediately returned from read_config
+
+    let f = open_file("config.txt")?
+
+    return Ok("Success")
 
 ```
 

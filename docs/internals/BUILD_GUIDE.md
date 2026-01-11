@@ -46,17 +46,12 @@ fn main():
     let target_file = args[2]
 
     # 2. Read Source File
-    let source = fs.File.open(target_file, "r") try (err):
-        print("Error opening file: " + err.msg)
-        return
-
-    let code = source.read_all() try (err):
-        return
+    # '?' propagates error immediately if open() fails
+    let source = fs.File.open(target_file, "r")?
+    let code = source.read_all()?
 
     # 3. Parsing (PEG)
-    let ast = parser.parse(move code) try (err):
-        print("Syntax Error: " + err.message)
-        return
+    let ast = parser.parse(move code)?
 
     # 4. Semantic Pass (Ownership & View check)
     if not ast.validate_ownership():

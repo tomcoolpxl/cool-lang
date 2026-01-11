@@ -38,6 +38,21 @@ This operation creates a scoped reference. It utilizes MLIR's **Region** system 
 
 ```
 
+### 3. The `cool.inout` Operation
+
+This operation creates a mutable, exclusive reference.
+
+```mlir
+// MLIR Syntax
+%mut_view = cool.inout %owner { scope = @current_block } : (!cool.user) -> !cool.inout<user>
+
+// Lowering Logic:
+// 1. Passes a pointer to the data.
+// 2. The Linear Analysis pass ensures %owner is not accessed (read or write)
+//    until this operation's scope ends.
+
+```
+
 ---
 
 ## The MLIR Lowering Table
@@ -48,8 +63,9 @@ The following table defines how high-level Coolscript code is lowered into MLIR 
 | --- | --- | --- |
 | `let x = User(...)` | `cool.alloc` | `call i8* @malloc(...)` |
 | `process(move x)` | `cool.move` | No-op (Pointer pass) |
-| `process(x)` | `cool.borrow` | No-op (Pointer pass) |
-| `process(copy x)` | `cool.copy` | `call i8* @memcpy(...)` |
+| `process(view x)` | `cool.borrow` | No-op (Pointer pass) |
+| `process(inout x)` | `cool.inout` | No-op (Pointer pass) |
+| `process(copy x)` | `cool.copy` | `call @Clone(...)` or `memcpy` |
 | `end of scope` | `cool.dealloc` | `call void @free(i8*)` |
 
 ---

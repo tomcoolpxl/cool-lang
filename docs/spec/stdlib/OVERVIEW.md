@@ -19,9 +19,9 @@ Coolscript abstracts input and output through two primary protocols, allowing fu
 
 ```python
 protocol Reader:
-    # Reads data into the provided view buffer. 
+    # Reads data into the provided buffer. 
     # Returns the number of bytes read or an IOError.
-    fn read(buffer: view List[u8]) -> Result[i64, IOError]
+    fn read(buffer: inout List[u8]) -> Result[i64, IOError]
 
 protocol Writer:
     # Writes data from the provided view buffer. 
@@ -53,8 +53,8 @@ struct File:
 
 ### File Methods
 
-* **read_all(view self) -> Result[str, IOError]**: Reads the entire file into an immutable string.
-* **write_str(view self, data: str) -> Result[i64, IOError]**: Writes a string to the file.
+* **read_all(inout self) -> Result[str, IOError]**: Reads the entire file into an immutable string.
+* **write_str(inout self, data: str) -> Result[i64, IOError]**: Writes a string to the file.
 * **close(move self)**: Explicitly closes the file handle and burns the resource.
 
 ---
@@ -73,10 +73,10 @@ struct TcpStream:
     fn dial(address: str) -> Result[TcpStream, NetError]:
         pass
 
-    fn send(view self, data: view List[u8]) -> Result[i64, NetError]:
+    fn send(inout self, data: view List[u8]) -> Result[i64, NetError]:
         pass
 
-    fn receive(view self, buffer: view List[u8]) -> Result[i64, NetError]:
+    fn receive(inout self, buffer: inout List[u8]) -> Result[i64, NetError]:
         pass
 
 struct TcpListener:
@@ -85,7 +85,7 @@ struct TcpListener:
     fn listen(address: str) -> Result[TcpListener, NetError]:
         pass
 
-    fn accept(view self) -> Result[TcpStream, NetError]:
+    fn accept(inout self) -> Result[TcpStream, NetError]:
         pass
 
 ```
@@ -123,15 +123,15 @@ Coolscript's built-in collections are optimized for the move-by-default model.
 
 A dynamic array that owns its elements.
 
-* **add(view self, item: move T)**: Consumes the item.
-* **pop(view self, index: i32) -> opt[T]**: Removes an item and returns ownership to the caller.
+* **add(inout self, item: move T)**: Consumes the item.
+* **pop(inout self, index: i32) -> opt[T]**: Removes an item and returns ownership to the caller.
 * **at(view self, index: i32) -> opt[view T]**: Returns a temporary read-only view.
 
 ### Dict[K, V]
 
 A hash map implementation.
 
-* **insert(view self, key: move K, value: move V)**: Both key and value ownership are transferred to the map.
+* **insert(inout self, key: move K, value: move V)**: Both key and value ownership are transferred to the map.
 * **get(view self, key: view K) -> opt[view V]**: Provides a view of the value associated with the key.
 
 ---

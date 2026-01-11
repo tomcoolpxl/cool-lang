@@ -31,6 +31,8 @@ fn worker(id: i32, ch: move Channel[str], db: move Database):
         # receive() returns opt[str]
         if let line = ch.receive():
             print("Worker " + str(id) + " processing: " + line)
+            
+            # Using 'try' block for local error handling (logging)
             db.write_entry(move line) try (err):
                 print("Database error: " + err.msg)
         else:
@@ -41,13 +43,13 @@ fn worker(id: i32, ch: move Channel[str], db: move Database):
 
 fn main():
     # 1. Open a file resource
+    # Using '?' to propagate errors up (or crash with message in simple main)
     let file = fs.File.open("access.log", "r") try (err):
         print("Could not open log: " + err.msg)
         return
 
     # 2. Read content (Owned string)
-    let content = file.read_all() try:
-        return
+    let content = file.read_all()?
 
     # 3. Setup Concurrency
     let ch = Channel[str](capacity=100)

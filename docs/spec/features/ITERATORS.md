@@ -12,7 +12,8 @@ protocol Iterator:
     type Item
     
     # Returns Some(Item) if available, or None to terminate the loop
-    fn next(view self) -> opt[Item]
+    # Must use 'inout' because the iterator modifies its internal state
+    fn next(inout self) -> opt[Item]
 
 ```
 
@@ -32,7 +33,7 @@ struct Range:
 protocol impl Iterator for Range:
     type Item = i64
     
-    fn next(view self) -> opt[i64]:
+    fn next(inout self) -> opt[i64]:
         if self.current < self.end:
             let val = self.current
             self.current += 1

@@ -7,8 +7,8 @@ Coolscript (`.cool`) is a statically typed, natively compiled, resource-oriented
 ## Key Features
 
 * **Move-by-Default Ownership**: Memory is managed via linear types. The compiler tracks the lifecycle of every object, ensuring zero leaks and no use-after-free bugs.
-* **Structured Concurrency**: No green threads or hidden schedulers. Coolscript uses **Isolates** and **Owned Channels** to prevent data races at compile-time.
-* **Zero-Cost Safety**: No Garbage Collector, no "Stop the World" pauses, and no reference counting overhead.
+* **Structured Concurrency**: No green threads or hidden schedulers. Coolscript uses **Isolates**, **Owned Channels**, and **Shared Handles** to prevent data races at compile-time.
+* **Zero-Cost Safety**: No Garbage Collector, no "Stop the World" pauses, and no hidden reference counting overhead (opt-in via `shared[T]`).
 * **Static Binaries**: Compiles directly to machine code (via MLIR/LLVM). Deployment is a single file.
 * **Pythonic Syntax**: Significant indentation and colons for clean, readable code.
 
@@ -40,9 +40,13 @@ fn main():
 
 ## Memory Model: The No-Escape Rule
 
-Coolscript utilizes a **Move/View** duality. You either own a resource (`move`) or you have a temporary, read-only window into it (`view`).
+Coolscript utilizes a **Move/View** duality. You either own a resource (`move`) or you have a temporary window into it (`view` for reading, `inout` for mutation).
 
-To maintain simplicity, Coolscript enforces the **No-Escape Rule**: Views are bound to the stack. They cannot be stored in structs or globals. If you need data to persist, you must move it. This eliminates the need for complex lifetime annotations (`<'a>`).
+To maintain simplicity, Coolscript enforces the **No-Escape Rule**: Views are bound to the stack. They cannot be stored in long-lived structs or globals.
+*   **Transient Structs**: Structs containing views are allowed but become bound to the stack ("Transient").
+*   **Graphs**: Permanent graphs use **Indices**, not pointers.
+
+This eliminates the need for complex lifetime annotations (`<'a>`).
 
 ---
 

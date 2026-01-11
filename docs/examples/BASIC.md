@@ -55,7 +55,7 @@ fn crawl(url: str, db: move Database):
     This task now owns the 'db' handle. 
     No other task can touch it simultaneously.
     """
-    let data = net.fetch(url)
+    let data = net.fetch(url)? # Propagate error if fetch fails
     db.save(move data)
     # db is burned here or closed automatically
 
@@ -65,9 +65,8 @@ fn main():
     
     for url in urls:
         # We must clone the sender or connection handle to share access
-        let db_handle = db.connect("localhost")
+        let db_handle = db.connect("localhost")?
         spawn crawl(url, move db_handle)
-
 ```
 
 ---
@@ -77,7 +76,7 @@ fn main():
 | Feature | Python | Go | **Coolscript** |
 | --- | --- | --- | --- |
 | **Syntax** | Indented / Clean | Braces / C-style | **Indented / Clean** |
-| **Concurrency** | Threads (Heavy) | Goroutines (Green) | **Tasks (Isolates)** |
+| **Concurrency** | Threads (Heavy) | Goroutines (Green) | **Isolates / Tasks** |
 | **Memory Safety** | Runtime (GC) | Runtime (GC) | **Compile-time (Linear)** |
 | **Data Races** | Possible (GIL helps) | Possible | **Impossible (By Design)** |
 | **Binary Size** | N/A (Interpreter) | Small (Static) | **Small (Static)** |
@@ -86,13 +85,18 @@ fn main():
 
 ## Why Coolscript is "Easier than Rust"
 
-In this example, a Rust developer would have to wrap the Database in an `Arc<Mutex<Database>>`.
+In this example, a Rust developer would have to wrap the Database in an `Arc<Mutex<Database>>` or deal with lifetime annotations if trying to share references.
 
-1. **Arc** (Atomic Reference Counting) is needed to share the pointer.
-2. **Mutex** is needed to lock it for mutation.
-3. **Lifetimes** might be needed if the database connection isn't "Static."
+In **Coolscript**, the `move` keyword does the work. By moving the `db_handle` into the `spawn` call, the compiler knows exactly where that memory is. 
 
-In **Coolscript**, the `move` keyword does the work. By moving the `db_handle` into the `spawn` call, the compiler knows exactly where that memory is. You don't have to write `<'a>` or `Arc::new()`. The syntax remains as clean as Python, but the safety is as rigid as Rust.
+If you *did* need to share read-only data (like a configuration), you would just use the `shared` keyword:
+
+```python
+let config = shared(Config())
+spawn worker(copy config)
+```
+
+You don't have to write `<'a>` or manage complex trait bounds. The syntax remains as clean as Python, but the safety is as rigid as Rust.
 
 ---
 

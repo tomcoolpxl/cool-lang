@@ -25,7 +25,7 @@ TopLevelDecl    <- ProtocolDecl / StructDecl / EnumDecl / FunctionDecl / ImportD
 ImportDecl      <- "import" _ String ( "as" _ Identifier )? NewLine
 
 # --- Type System ---
-Type            <- ( "opt" / "Result" / "List" / "Dict" ) "[" _ Type ( "," _ Type )* _ "]"
+Type            <- ( "opt" / "Result" / "List" / "Dict" / "shared" ) "[" _ Type ( "," _ Type )* _ "]"
                  / "view" _ Identifier
                  / Identifier
 
@@ -39,7 +39,7 @@ ProtocolBody    <- ( "fn" _ Identifier "(" _ Params? _ ")" ( "->" _ Type )? )+
 # --- Functions ---
 FunctionDecl    <- "fn" _ Identifier "(" _ Params? _ ")" ( "->" _ Type )? ":" INDENT Block DEDENT
 Params          <- Param ( "," _ Param )*
-Param           <- ( "move" _ )? Identifier _ ":" _ Type
+Param           <- ( "move" _ / "inout" _ )? Identifier _ ":" _ Type
 
 # --- Control Flow ---
 Block           <- ( Statement )+
@@ -60,10 +60,13 @@ MatchStmt       <- "match" _ Expression ":" INDENT ( Case )+ DEDENT
 Case            <- Identifier ( "(" _ Identifier _ ")" )? ":" INDENT Block DEDENT
 
 # --- Expressions ---
-Expression      <- TryExpr / LogicalExpr
+Expression      <- TryExpr / TryPropagateExpr / LogicalExpr
 
 # Postfix 'try' for Result types
 TryExpr         <- LogicalExpr _ "try" ( "(" _ Identifier _ ")" )? ":" INDENT Block DEDENT
+
+# Propagation operator '?'
+TryPropagateExpr <- LogicalExpr _ "?"
 
 LogicalExpr     <- Equality ( ( "and" / "or" ) _ Equality )*
 Equality        <- Comparison ( ( "==" / "!=" / "is" ) _ Comparison )*
@@ -72,7 +75,7 @@ Comparison      <- Term ( ( "<=" / ">=" / "<" / ">" ) _ Term )*
 # Function Calls with explicit move/copy
 CallExpr        <- Identifier "(" _ Arguments? _ ")"
 Arguments       <- Argument ( "," _ Argument )*
-Argument        <- ( "move" _ / "copy" _ )? Expression
+Argument        <- ( "move" _ / "copy" _ / "inout" _ )? Expression
 
 # --- Atoms ---
 Term            <- Identifier / Literal / "(" _ Expression _ ")"

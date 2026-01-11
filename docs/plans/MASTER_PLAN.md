@@ -8,7 +8,7 @@ This **30-Day Implementation Roadmap** breaks down the development of the **Cool
 
 * **Day 1–3: Lexer and Indentation Tracker.** Implement the logic to convert physical whitespace into `INDENT` and `DEDENT` tokens. This is the foundation of the Pythonic aesthetic.
 * **Day 4–5: PEG Parser Implementation.** Use the provided PEG grammar to build the parser. Focus on top-level declarations: `struct`, `protocol`, and `fn`.
-* **Day 6–7: Expression and Statement Parsing.** Handle control flow (`if`, `while`, `for`) and the explicit `move`/`view` keywords in function calls.
+* **Day 6–7: Expression and Statement Parsing.** Handle control flow (`if`, `while`, `for`) and the explicit `move`/`view`/`inout`/`copy` keywords in function calls.
 
 ---
 
@@ -18,7 +18,7 @@ This **30-Day Implementation Roadmap** breaks down the development of the **Cool
 
 * **Day 8–10: Symbol Table and Type Resolution.** Resolve types and ensure that `opt[T]` and `Result[T, E]` are treated as distinct wrappers that require unwrapping.
 * **Day 11–13: The Ownership Tracker (Linearity Pass).**
-* Implement a "state" for every variable: `Available`, `Borrowed (Viewed)`, or `Burned`.
+* Implement a "state" for every variable: `Available`, `Borrowed (Viewed)`, `Mutably Borrowed (Inout)`, or `Burned`.
 * Verify that any use of the `move` keyword transitions a variable to the `Burned` state.
 * Generate the "Ownership Traceback" error messages for invalid accesses.
 
@@ -31,7 +31,7 @@ This **30-Day Implementation Roadmap** breaks down the development of the **Cool
 
 **Goal:** Lower the validated AST into a machine-readable intermediate representation.
 
-* **Day 16–18: Dialect Definition.** Define the `cool` MLIR dialect. Create operations for `cool.move`, `cool.borrow`, and `cool.box` (for Protocols).
+* **Day 16–18: Dialect Definition.** Define the `cool` MLIR dialect. Create operations for `cool.move`, `cool.borrow`, `cool.inout`, and `cool.box` (for Protocols).
 * **Day 19–21: AST-to-MLIR Lowering.** Translate the semantic-checked AST into the MLIR dialect.
 * **Day 22–23: Memory Lifetime Injection.** Since there is no GC, the compiler must inject `llvm.free` calls at the exact point a variable is "Burned" or its owner goes out of scope.
 
