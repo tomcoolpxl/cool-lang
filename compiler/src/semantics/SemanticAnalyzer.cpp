@@ -46,7 +46,12 @@ void SemanticAnalyzer::visitBlock(const std::vector<std::unique_ptr<Stmt>>& stmt
 }
 
 void SemanticAnalyzer::visitStmt(const Stmt& stmt) {
-    if (auto ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
+    if (auto let = dynamic_cast<const LetStmt*>(&stmt)) {
+        visitExpr(*let->initializer);
+        if (!symbolTable.define(let->name, TypeRegistry::Int32())) {
+            throw std::runtime_error("Redefinition of variable: " + let->name);
+        }
+    } else if (auto ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
         if (ret->value) visitExpr(*ret->value);
     } else if (auto exprStmt = dynamic_cast<const ExprStmt*>(&stmt)) {
         visitExpr(*exprStmt->expr);
@@ -62,6 +67,30 @@ void SemanticAnalyzer::visitExpr(const Expr& expr) {
         
         if (sym->state == OwnershipState::Burned) {
             throw std::runtime_error("Use of moved value: " + var->name);
+        }
+    } else if (auto call = dynamic_cast<const CallExpr*>(&expr)) {
+        // Check if function exists
+        if (!symbolTable.resolve(call->name)) {
+            throw std::runtime_error("Undefined function: " + call->name);
+        }
+
+        for (const auto& arg : call->args) {
+            if (arg->mode == Argument::Mode::Move) {
+                if (auto v = dynamic_cast<const VariableExpr*>(arg->expr.get())) {
+                    Symbol* sym = symbolTable.resolve(v->name);
+                    if (sym) {
+                        if (sym->state == OwnershipState::Burned) {
+                            throw std::runtime_error("Double move detected: " + v->name);
+                        }
+                        sym->state = OwnershipState::Burned;
+                    }
+                } else {
+                    // Moving a literal or result of expr is fine (it's temporary anyway)
+                    visitExpr(*arg->expr);
+                }
+            } else {
+                visitExpr(*arg->expr);
+            }
         }
     }
 }

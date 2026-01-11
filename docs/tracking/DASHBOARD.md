@@ -10,7 +10,8 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 | --- | --- | --- | --- |
 | **1** | **Frontend** | Indentation Stack & Lexer | [x] |
 | **1** | **Frontend** | PEG Parser & AST Nodes | [x] |
-| **2** | **Ownership** | Linear Type Pass, Move/View Validation | [ ] |
+| **2** | **Ownership** | Linear Type Pass (Double Move) | [x] |
+| **2** | **Ownership** | Move/View Validation (No-Escape) | [ ] |
 | **3** | **MLIR/LLVM** | `cool` Dialect, Lowering to LLVM IR, `cs_alloc` | [ ] |
 | **4** | **Runtime** | C-based Channels, Task Spawning, Static Linker | [ ] |
 
@@ -42,7 +43,7 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 
 ### Safety Guardrails
 
-* [ ] **Double-Move Check**: Ensure the compiler catches `move x` followed by `move x`.
+* [x] **Double-Move Check**: Ensure the compiler catches `move x` followed by `move x`.
 * [ ] **Transient Struct Check**: Ensure structs containing views ("Transient") cannot be stored in long-lived structures or globals.
 * [ ] **Isolation Check**: Ensure only `move` types can cross the `spawn` boundary.
 
@@ -63,5 +64,5 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 ## Project Status Tracking
 
 > **Current Phase**: Implementation (Milestone 1)
-> **Next Immediate Task**: Implement the Semantic Analysis Pass (Ownership & View Validation) - Milestone 1, Week 2.
+> **Next Immediate Task**: Implement Transient Analysis (No-Escape Rule) and MLIR Dialect definition (Milestone 1, Week 2/3).
 

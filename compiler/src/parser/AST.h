@@ -14,6 +14,26 @@ struct ASTNode {
 // --- Expressions ---
 struct Expr : ASTNode {};
 
+struct Argument : ASTNode {
+    enum class Mode { View, Move, Copy, InOut };
+    Mode mode;
+    std::unique_ptr<Expr> expr;
+    
+    Argument(Mode m, std::unique_ptr<Expr> e) : mode(m), expr(std::move(e)) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Arg (";
+        switch(mode) {
+            case Mode::View: std::cout << "view"; break;
+            case Mode::Move: std::cout << "move"; break;
+            case Mode::Copy: std::cout << "copy"; break;
+            case Mode::InOut: std::cout << "inout"; break;
+        }
+        std::cout << "):\n";
+        expr->print(indent + 2);
+    }
+};
+
 struct LiteralExpr : Expr {
     std::string value;
     LiteralExpr(std::string v) : value(v) {}
@@ -30,8 +50,34 @@ struct VariableExpr : Expr {
     }
 };
 
+struct CallExpr : Expr {
+    std::string name;
+    std::vector<std::unique_ptr<Argument>> args;
+    
+    CallExpr(std::string n) : name(n) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Call: " << name << "\n";
+        for (const auto& arg : args) {
+            arg->print(indent + 2);
+        }
+    }
+};
+
 // --- Statements ---
 struct Stmt : ASTNode {};
+
+struct LetStmt : Stmt {
+    std::string name;
+    std::unique_ptr<Expr> initializer;
+    
+    LetStmt(std::string n, std::unique_ptr<Expr> i) : name(n), initializer(std::move(i)) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Let: " << name << "\n";
+        initializer->print(indent + 2);
+    }
+};
 
 struct ReturnStmt : Stmt {
     std::unique_ptr<Expr> value;

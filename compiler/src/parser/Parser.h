@@ -12,18 +12,20 @@ public:
 private:
     Lexer& lexer;
     Token current;
-    Token next;
+    Token peekToken;
 
-    void advance(); // Consumes current, moves next to current, fetches new next
-    bool match(TokenType type); // If current is type, advance and return true
-    bool check(TokenType type); // True if current is type
-    Token consume(TokenType type, std::string message); // Expects type or throws/errors
+    void advance(); 
+    bool match(TokenType type); 
+    bool check(TokenType type); 
+    Token consume(TokenType type, std::string message); 
 
     std::unique_ptr<FunctionDecl> parseFunction();
     std::unique_ptr<StructDecl> parseStruct();
     std::unique_ptr<Stmt> parseStatement();
+    std::unique_ptr<Stmt> parseLetStmt();
     std::unique_ptr<Expr> parseExpression();
     std::unique_ptr<Expr> parsePrimary();
+    std::unique_ptr<Expr> parseCall(std::string name);
     
     std::vector<std::unique_ptr<Stmt>> parseBlock();
 };

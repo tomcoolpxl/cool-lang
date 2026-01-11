@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Milestone 1 (Implementation)
-**Focus:** Semantic Analysis (Ownership).
-**Completed:** Lexer, Indentation, PEG Parser, AST.
+**Focus:** Transient Analysis & MLIR Dialect.
+**Completed:** Lexer, Parser, AST, Semantic Analysis (Linear Types).
 
 ## Dashboards
 *   [Implementation Dashboard](DASHBOARD.md): detailed task breakdown and status for the 90-day sprint.

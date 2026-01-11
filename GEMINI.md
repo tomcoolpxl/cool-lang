@@ -82,5 +82,5 @@ Or potentially via `make test` if available.
 
 ## Current Status (Milestone 1)
 *   **Focus:** Core Engine Implementation.
-*   **Completed:** Lexer, Indentation Stack, PEG Parser, AST Generation.
-*   **Active Tasks:** Implementing the Semantic Analysis Pass (Ownership verification, Symbol Table).
+*   **Completed:** Lexer, Parser, AST, Semantic Analysis (Linear Types).
+*   **Active Tasks:** Implementing Transient Analysis (No-Escape Rule) and MLIR Dialect.

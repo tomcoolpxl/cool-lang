@@ -4,17 +4,13 @@
 namespace cool {
 
 Parser::Parser(Lexer& lexer) : lexer(lexer) {
-    current = lexer.nextToken(); // Prime the pump? 
-    // Actually, if we use current/next pattern:
-    // current is the one we are processing.
-    // next is lookahead.
-    // My Lexer::nextToken() advances.
-    // So init:
-    // current = lexer.nextToken();
+    current = lexer.nextToken();
+    peekToken = lexer.nextToken();
 }
 
 void Parser::advance() {
-    current = lexer.nextToken();
+    current = peekToken;
+    peekToken = lexer.nextToken();
 }
 
 bool Parser::match(TokenType type) {
@@ -35,15 +31,15 @@ Token Parser::consume(TokenType type, std::string message) {
         advance();
         return t;
     }
-    std::cerr << "Parser Error: " << message << " at line " << current.line << ", got " << tokenTypeToString(current.type) << std::endl;
-    exit(1); // Simple panic for now
+    std::cerr << "Parser Error: " << message << " at line " << current.line << ", got " << tokenTypeToString(current.type) << " (" << current.text << ")" << std::endl;
+    exit(1); 
 }
 
 std::unique_ptr<Program> Parser::parseProgram() {
     auto prog = std::make_unique<Program>();
     while (!check(TokenType::EndOfFile)) {
         if (check(TokenType::NewLine)) {
-            advance(); // Skip empty lines at top level
+            advance(); 
             continue;
         }
         
@@ -52,7 +48,7 @@ std::unique_ptr<Program> Parser::parseProgram() {
         } else if (check(TokenType::Struct)) {
             prog->decls.push_back(parseStruct());
         } else {
-            std::cerr << "Unexpected token at top level: " << tokenTypeToString(current.type) << std::endl;
+            std::cerr << "Unexpected token at top level: " << tokenTypeToString(current.type) << " (" << current.text << ")" << std::endl;
             advance();
         }
     }
@@ -109,7 +105,6 @@ std::unique_ptr<FunctionDecl> Parser::parseFunction() {
 
     consume(TokenType::RParen, "Expected ')'");
     
-    // Return type optional
     if (match(TokenType::Arrow)) {
         Token retType = consume(TokenType::Identifier, "Expected return type");
         func->returnType = retType.text;
@@ -139,6 +134,8 @@ std::vector<std::unique_ptr<Stmt>> Parser::parseBlock() {
 }
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
+    if (check(TokenType::Let)) return parseLetStmt();
+
     if (match(TokenType::Return)) {
         std::unique_ptr<Expr> value = nullptr;
         if (!check(TokenType::NewLine)) {
@@ -148,14 +145,22 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return std::make_unique<ReturnStmt>(std::move(value));
     }
     
-    // Expression statement
     auto expr = parseExpression();
     consume(TokenType::NewLine, "Expected newline after expression");
     return std::make_unique<ExprStmt>(std::move(expr));
 }
 
+std::unique_ptr<Stmt> Parser::parseLetStmt() {
+    consume(TokenType::Let, "Expected 'let'");
+    Token name = consume(TokenType::Identifier, "Expected variable name");
+    consume(TokenType::Equal, "Expected '='");
+    auto init = parseExpression();
+    consume(TokenType::NewLine, "Expected newline after let");
+    return std::make_unique<LetStmt>(name.text, std::move(init));
+}
+
 std::unique_ptr<Expr> Parser::parseExpression() {
-    return parsePrimary(); // Only primaries for now
+    return parsePrimary(); 
 }
 
 std::unique_ptr<Expr> Parser::parsePrimary() {
@@ -167,10 +172,35 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (check(TokenType::Identifier)) {
         Token t = current;
         advance();
+        if (check(TokenType::LParen)) {
+            return parseCall(t.text);
+        }
         return std::make_unique<VariableExpr>(t.text);
     }
-    std::cerr << "Unexpected token in expression: " << tokenTypeToString(current.type) << std::endl;
+    std::cerr << "Unexpected token in expression: " << tokenTypeToString(current.type) << " (" << current.text << ")" << std::endl;
     exit(1);
+}
+
+std::unique_ptr<Expr> Parser::parseCall(std::string name) {
+    consume(TokenType::LParen, "Expected '('");
+    auto call = std::make_unique<CallExpr>(name);
+    
+    while (!check(TokenType::RParen)) {
+        Argument::Mode mode = Argument::Mode::View;
+        if (match(TokenType::Move)) mode = Argument::Mode::Move;
+        else if (match(TokenType::Copy)) mode = Argument::Mode::Copy;
+        else if (match(TokenType::Inout)) mode = Argument::Mode::InOut;
+        
+        auto expr = parseExpression();
+        call->args.push_back(std::make_unique<Argument>(mode, std::move(expr)));
+        
+        if (!check(TokenType::RParen)) {
+            consume(TokenType::Comma, "Expected ','");
+        }
+    }
+    
+    consume(TokenType::RParen, "Expected ')'");
+    return call;
 }
 
 } // namespace cool
