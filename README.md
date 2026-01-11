@@ -7,7 +7,7 @@ Coolscript (`.cool`) is a statically typed, natively compiled, resource-oriented
 ## Key Features
 
 * **Move-by-Default Ownership**: Memory is managed via linear types. The compiler tracks the lifecycle of every object, ensuring zero leaks and no use-after-free bugs.
-* **Structured Concurrency**: No green threads or hidden schedulers. Coolscript uses **Isolates**, **Owned Channels**, and **Shared Handles** to prevent data races at compile-time.
+* **Structured Concurrency**: Coolscript uses **Isolates** mapped to a high-performance **Work-Stealing Thread Pool** (M:N threading). This allows for 100k+ concurrent tasks without the overhead of OS threads.
 * **Zero-Cost Safety**: No Garbage Collector, no "Stop the World" pauses, and no hidden reference counting overhead (opt-in via `shared[T]`).
 * **Static Binaries**: Compiles directly to machine code (via MLIR/LLVM). Deployment is a single file.
 * **Pythonic Syntax**: Significant indentation and colons for clean, readable code.

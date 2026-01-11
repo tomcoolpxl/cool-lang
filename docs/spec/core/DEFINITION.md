@@ -519,20 +519,52 @@ fn read_config() -> Result[str, IOError]:
 
 ## C-Interop
 
-Support for C is a first-class citizen. Using `import "C"` allows direct access to C functions without wrappers.
+
+
+Support for C is a first-class citizen. Using `import "C"` allows direct access to C functions without wrappers. However, because C functions cannot guarantee Coolscript's memory safety, calling them requires an `unsafe` block.
+
+
 
 ```python
+
 import "C"
 
+
+
 extern "libc.so.6":
+
     fn printf(format: str, ...) -> i32
+
     fn malloc(size: i64) -> view void
+
     fn floor(x: f64) -> f64
 
-fn main():
-    let result = C.floor(10.5)
-    C.printf("Result: %f\n", result)
 
+
+fn main():
+
+    unsafe:
+
+        let result = C.floor(10.5)
+
+        C.printf("Result: %f\n", result)
+
+```
+
+---
+
+## Program Entry Point
+
+Every executable Coolscript program must have a `main` function.
+
+*   **Signature**: `fn main() -> Result[(), Error]` or `fn main()`.
+*   **Error Handling**: If `main` returns a `Result`, the runtime will automatically print the error message and exit with a non-zero status code if an `Err` occurs.
+
+```python
+fn main() -> Result[(), IOError]:
+    let content = fs.read_file("config.txt")?
+    print(content)
+    return Ok(())
 ```
 
 ---

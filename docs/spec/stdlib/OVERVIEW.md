@@ -124,8 +124,8 @@ Coolscript's built-in collections are optimized for the move-by-default model.
 A dynamic array that owns its elements.
 
 * **add(inout self, item: move T)**: Consumes the item.
-* **pop(inout self, index: i32) -> opt[T]**: Removes an item and returns ownership to the caller.
-* **at(view self, index: i32) -> opt[view T]**: Returns a temporary read-only view.
+* **pop(inout self, index: i64) -> opt[T]**: Removes an item and returns ownership to the caller.
+* **at(view self, index: i64) -> opt[view T]**: Returns a temporary read-only view.
 
 ### Dict[K, V]
 
