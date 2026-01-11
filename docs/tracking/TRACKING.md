@@ -1,8 +1,9 @@
 # Coolscript Implementation Tracking
 
 ## Current Status
-**Phase:** Milestone 1 (Initial Implementation)
-**Focus:** Core Engine, PEG Parser, Ownership Analysis.
+**Phase:** Milestone 1 (Implementation)
+**Focus:** PEG Parser & AST.
+**Completed:** Lexer & Indentation Tracking.
 
 ## Dashboards
 *   [Implementation Dashboard](DASHBOARD.md): detailed task breakdown and status for the 90-day sprint.

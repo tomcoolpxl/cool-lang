@@ -8,7 +8,8 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 
 | Week | Focus | Key Deliverables | Status |
 | --- | --- | --- | --- |
-| **1** | **Frontend** | PEG Parser, Indentation Stack, AST Nodes | [ ] |
+| **1** | **Frontend** | Indentation Stack & Lexer | [x] |
+| **1** | **Frontend** | PEG Parser & AST Nodes | [ ] |
 | **2** | **Ownership** | Linear Type Pass, Move/View Validation | [ ] |
 | **3** | **MLIR/LLVM** | `cool` Dialect, Lowering to LLVM IR, `cs_alloc` | [ ] |
 | **4** | **Runtime** | C-based Channels, Task Spawning, Static Linker | [ ] |
@@ -61,6 +62,6 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 
 ## Project Status Tracking
 
-> **Current Phase**: Pre-Implementation / Architecture Finalized
-> **Next Immediate Task**: Implement the PEG Lexer with the Indentation Stack (Milestone 1, Week 1).
+> **Current Phase**: Implementation (Milestone 1)
+> **Next Immediate Task**: Implement the PEG Parser and AST generation (Milestone 1, Week 1).
 

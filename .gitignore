@@ -1,0 +1,80 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+bin/
+lib/
+
+# Object files
+*.o
+*.obj
+*.lo
+*.slo
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+coolc
+coolc.exe
+
+# MLIR/LLVM artifacts
+*.mlir
+*.ll
+*.bc
+*.s
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# IDE and editors
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+*.user
+*.suo
+*.ncb
+*.opensdf
+*.sdf
+
+# Compilation database
+compile_commands.json
+
+# Logs
+*.log
+
+# Test artifacts
+tests/output/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package managers
+vcpkg_installed/
+_deps/
