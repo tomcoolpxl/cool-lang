@@ -221,7 +221,7 @@ Coolscript supports `while` and `for` loops. It excludes `until` and `do-while` 
 ```python
 # Range-based loop (0 to 9) using 0..10 syntax
 for i in 0..10:
-    print(str(i))
+    print(f"{i}")
 
 # Collection loop (View-based)
 let items = ["apple", "banana", "cherry"]

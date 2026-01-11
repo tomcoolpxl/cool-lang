@@ -50,7 +50,7 @@ Coolscript provides Python-like syntax and Go-like concurrency but enforces **Ow
 import std.net
 import std.db
 
-fn crawl(url: str, db: move Database):
+fn crawl(url: str, db: move Database) -> Result[(), Error]:
     """
     This task now owns the 'db' handle. 
     No other task can touch it simultaneously.
@@ -58,8 +58,9 @@ fn crawl(url: str, db: move Database):
     let data = net.fetch(url)? # Propagate error if fetch fails
     db.save(move data)
     # db is burned here or closed automatically
+    return Ok(())
 
-fn main():
+fn main() -> Result[(), Error]:
     # We load the urls
     let urls = ["site1.cool", "site2.cool"]
     
@@ -67,6 +68,8 @@ fn main():
         # We must clone the sender or connection handle to share access
         let db_handle = db.connect("localhost")?
         spawn crawl(url, move db_handle)
+    
+    return Ok(())
 ```
 
 ---

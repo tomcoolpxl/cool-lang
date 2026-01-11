@@ -41,7 +41,7 @@ fn worker(id: i32, ch: move Channel[str], db: move Database):
     
     # db is burned here; handle is closed automatically
 
-fn main():
+fn main() -> Result[(), IOError]:
     # 1. Open a file resource
     # Using '?' to propagate errors up (or crash with message in simple main)
     let file = fs.File.open("access.log", "r") try (err):

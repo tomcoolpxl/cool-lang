@@ -19,10 +19,13 @@ Since Coolscript uses significant whitespace, the parser must track "Indentation
 ```peg
 # --- Top Level ---
 Program         <- _ (Statement / TopLevelDecl)* _
-TopLevelDecl    <- ProtocolDecl / StructDecl / EnumDecl / FunctionDecl / ImportDecl
+TopLevelDecl    <- ProtocolDecl / StructDecl / EnumDecl / FunctionDecl / ImportDecl / ConstDecl
 
 # --- Imports ---
 ImportDecl      <- "import" _ String ( "as" _ Identifier )? NewLine
+
+# --- Constants ---
+ConstDecl       <- "const" _ Identifier _ ":" _ Type _ "=" _ Literal NewLine
 
 # --- Type System ---
 Type            <- ( "opt" / "Result" / "List" / "Dict" / "shared" ) "[" _ Type ( "," _ Type )* _ "]"

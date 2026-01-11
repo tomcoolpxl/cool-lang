@@ -136,6 +136,17 @@ A hash map implementation.
 
 ---
 
+## Core Wrapper Methods
+
+The `opt[T]` and `Result[T, E]` types provide helper methods for ergonomic unwrapping.
+
+* **unwrap(move self) -> T**: Returns the value or panics if None/Err.
+* **expect(move self, msg: str) -> T**: Returns the value or panics with the provided message if None/Err.
+* **is_some(view self) -> bool**: Returns true if opt contains a value.
+* **is_ok(view self) -> bool**: Returns true if Result is Ok.
+
+---
+
 ## Built-in Functions and Constants
 
 The standard library includes a "prelude" that is imported into every `.cool` file automatically:
