@@ -263,10 +263,10 @@ fn check_status(s: view Status):
     match s:
         Status.Pending:
             print("Action is pending")
-                Status.Active:
-                    print("Action is active")
-                Status.Closed(reason):
-                    print(f"Closed because: {reason}")
+        Status.Active:
+            print("Action is active")
+        Status.Closed(reason):
+            print(f"Closed because: {reason}")
         ```
 
 ---
