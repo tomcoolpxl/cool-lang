@@ -94,18 +94,6 @@ We are currently in the **Initial Implementation Phase**. The following componen
 
 ---
 
-## Contributing
-
-We are looking for contributors interested in:
-
-* **Compiler Engineering**: Implementing the MLIR Linear Type pass.
-* **Language Design**: Refining the Standard Library protocols.
-* **Tooling**: Building the `cool fmt` and LSP integration.
-
-Please see the [Technical Manual](https://www.google.com/search?q=./TECHNICAL_MANUAL.md) for full architectural details.
-
----
-
 ## License
 
 Coolscript is released under the MIT License.

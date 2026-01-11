@@ -1,20 +1,7 @@
-#include <iostream>
-#include <vector>
-#include <string>
+#include "TestFramework.h"
 #include "../src/lexer/Lexer.h"
 
-// Simple Test Framework
-#define ASSERT_EQ(a, b) \
-    if ((a) != (b)) { \
-        std::cerr << "Assertion failed: " << #a << " != " << #b << "\n" \
-                  << "  Expected: " << (b) << "\n" \
-                  << "  Actual:   " << (a) << "\n" \
-                  << "  File:     " << __FILE__ << ":" << __LINE__ << std::endl; \
-        exit(1); \
-    }
-
-void test_basic_tokens() {
-    std::cout << "Running test_basic_tokens..." << std::endl;
+TEST(test_basic_tokens) {
     cool::Lexer lexer("fn main 123");
     
     cool::Token t1 = lexer.nextToken();
@@ -27,41 +14,32 @@ void test_basic_tokens() {
     cool::Token t3 = lexer.nextToken();
     ASSERT_EQ((int)t3.type, (int)cool::TokenType::IntegerLiteral);
     ASSERT_EQ(t3.text, "123");
-    
-    std::cout << "PASS" << std::endl;
 }
 
-void test_indentation() {
-    std::cout << "Running test_indentation..." << std::endl;
-    // fn main:
-    //     return
+TEST(test_indentation) {
     std::string source = "fn main:\n    return\n"; 
     cool::Lexer lexer(source);
     
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Fn);
-    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Identifier); // main
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Identifier);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Colon);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::NewLine);
     
-    // Here we expect INDENT
+    // INDENT
     cool::Token t = lexer.nextToken();
     if (t.type != cool::TokenType::Indent) {
-        std::cout << "Expected INDENT, got " << (int)t.type << " (" << t.text << ")" << std::endl;
+        throw std::runtime_error("Expected INDENT");
     }
-    ASSERT_EQ((int)t.type, (int)cool::TokenType::Indent);
     
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Return);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::NewLine);
     
-    // End of file should trigger DEDENT (auto-close blocks)
+    // DEDENT
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Dedent);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::EndOfFile);
-    
-    std::cout << "PASS" << std::endl;
 }
 
-void test_operators() {
-    std::cout << "Running test_operators..." << std::endl;
+TEST(test_operators) {
     cool::Lexer lexer("+ - * / = == != < <= > >=");
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Plus);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Minus);
@@ -74,41 +52,24 @@ void test_operators() {
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::LessEqual);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Greater);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::GreaterEqual);
-    std::cout << "PASS" << std::endl;
 }
 
-void test_strings() {
-    std::cout << "Running test_strings..." << std::endl;
+TEST(test_strings) {
     cool::Lexer lexer("\"hello\" \"world\"");
     
     cool::Token t1 = lexer.nextToken();
     ASSERT_EQ((int)t1.type, (int)cool::TokenType::StringLiteral);
-    ASSERT_EQ(t1.text, "\"hello\""); 
+    ASSERT_EQ(t1.text, "\"hello\"");
     
     cool::Token t2 = lexer.nextToken();
     ASSERT_EQ((int)t2.type, (int)cool::TokenType::StringLiteral);
     ASSERT_EQ(t2.text, "\"world\"");
-    std::cout << "PASS" << std::endl;
 }
 
-void test_comments() {
-    std::cout << "Running test_comments..." << std::endl;
+TEST(test_comments) {
     cool::Lexer lexer("# comment\nfn");
-    // Lexer emits NEWLINE for the \n after comment?
-    // skipWhitespace consumes #... until \n.
-    // Then scanToken switches on \n -> NEWLINE.
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::NewLine);
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Fn);
-    std::cout << "PASS" << std::endl;
 }
 
-int main() {
-    test_basic_tokens();
-    test_indentation();
-    test_operators();
-    test_strings();
-    test_comments();
-    std::cout << "All tests passed!" << std::endl;
-    return 0;
-}
-
+TEST_MAIN()

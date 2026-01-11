@@ -1,18 +1,8 @@
-#include <iostream>
-#include <vector>
-#include <string>
+#include "TestFramework.h"
 #include "../src/lexer/Lexer.h"
 #include "../src/parser/Parser.h"
 
-#define ASSERT(cond) \
-    if (!(cond)) { \
-        std::cerr << "Assertion failed: " << #cond << "\n" \
-                  << "  File: " << __FILE__ << ":" << __LINE__ << std::endl; \
-        exit(1); \
-    }
-
-void test_parse_simple_function() {
-    std::cout << "Running test_parse_simple_function..." << std::endl;
+TEST(test_parse_simple_function) {
     std::string source = "fn main():\n    return 123\n";
     cool::Lexer lexer(source);
     cool::Parser parser(lexer);
@@ -20,23 +10,18 @@ void test_parse_simple_function() {
     auto prog = parser.parseProgram();
     ASSERT(prog != nullptr);
     ASSERT(prog->decls.size() == 1);
-    
-    std::cout << "PASS" << std::endl;
 }
 
-void test_parse_struct() {
-    std::cout << "Running test_parse_struct..." << std::endl;
+TEST(test_parse_struct) {
     std::string source = "struct Point:\n    x: i32\n";
     cool::Lexer lexer(source);
     cool::Parser parser(lexer);
     auto prog = parser.parseProgram();
     ASSERT(prog->decls.size() == 1);
     ASSERT(dynamic_cast<cool::StructDecl*>(prog->decls[0].get()) != nullptr);
-    std::cout << "PASS" << std::endl;
 }
 
-void test_parse_let() {
-    std::cout << "Running test_parse_let..." << std::endl;
+TEST(test_parse_let) {
     std::string source = "fn main():\n    let x = 1\n";
     cool::Lexer lexer(source);
     cool::Parser parser(lexer);
@@ -46,11 +31,9 @@ void test_parse_let() {
     ASSERT(func != nullptr);
     ASSERT(func->body.size() == 1);
     ASSERT(dynamic_cast<cool::LetStmt*>(func->body[0].get()) != nullptr);
-    std::cout << "PASS" << std::endl;
 }
 
-void test_parse_call() {
-    std::cout << "Running test_parse_call..." << std::endl;
+TEST(test_parse_call) {
     std::string source = "fn main():\n    foo(x, move y)\n";
     cool::Lexer lexer(source);
     cool::Parser parser(lexer);
@@ -61,15 +44,6 @@ void test_parse_call() {
     ASSERT(call != nullptr);
     ASSERT(call->args.size() == 2);
     ASSERT(call->args[1]->mode == cool::Argument::Mode::Move);
-    std::cout << "PASS" << std::endl;
 }
 
-int main() {
-    test_parse_simple_function();
-    test_parse_struct();
-    test_parse_let();
-    test_parse_call();
-    std::cout << "All parser tests passed!" << std::endl;
-    return 0;
-}
-
+TEST_MAIN()
