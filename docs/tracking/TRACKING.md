@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Milestone 1 (Implementation)
-**Focus:** PEG Parser & AST.
-**Completed:** Lexer & Indentation Tracking.
+**Focus:** Semantic Analysis (Ownership).
+**Completed:** Lexer, Indentation, PEG Parser, AST.
 
 ## Dashboards
 *   [Implementation Dashboard](DASHBOARD.md): detailed task breakdown and status for the 90-day sprint.

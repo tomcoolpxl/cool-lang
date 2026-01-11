@@ -81,6 +81,6 @@ Or potentially via `make test` if available.
 *   **Comments:** Use `#` for single-line comments.
 
 ## Current Status (Milestone 1)
-*   **Focus:** Initial Implementation Phase.
-*   **Components:** PEG Grammar, MLIR Dialect (Ownership/Linearity passes), C Runtime.
-*   **Active Tasks:** Implementing the MLIR Linear Type pass, refining Standard Library protocols.
+*   **Focus:** Core Engine Implementation.
+*   **Completed:** Lexer, Indentation Stack, PEG Parser, AST Generation.
+*   **Active Tasks:** Implementing the Semantic Analysis Pass (Ownership verification, Symbol Table).
