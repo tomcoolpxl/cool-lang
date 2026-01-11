@@ -383,9 +383,6 @@ fn consumer(ch: view Channel[i32]):
     if let val = ch.receive():
 
         print(f"Received: {val}")
-```
-
-
 
 fn main():
 
