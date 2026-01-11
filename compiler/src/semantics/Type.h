@@ -30,6 +30,16 @@ struct PrimitiveType : Type {
     PrimitiveType(std::string n) : Type(TypeKind::Primitive, n) {}
 };
 
+struct StructType : Type {
+    struct Field {
+        std::string name;
+        std::shared_ptr<Type> type;
+    };
+    std::vector<Field> fields;
+    
+    StructType(std::string n) : Type(TypeKind::Struct, n) {}
+};
+
 class TypeRegistry {
 public:
     static std::shared_ptr<Type> Int32() { static auto t = std::make_shared<PrimitiveType>("i32"); return t; }

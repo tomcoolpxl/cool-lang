@@ -49,6 +49,8 @@ std::unique_ptr<Program> Parser::parseProgram() {
         
         if (check(TokenType::Fn)) {
             prog->decls.push_back(parseFunction());
+        } else if (check(TokenType::Struct)) {
+            prog->decls.push_back(parseStruct());
         } else {
             std::cerr << "Unexpected token at top level: " << tokenTypeToString(current.type) << std::endl;
             advance();
@@ -57,19 +59,65 @@ std::unique_ptr<Program> Parser::parseProgram() {
     return prog;
 }
 
+std::unique_ptr<StructDecl> Parser::parseStruct() {
+    consume(TokenType::Struct, "Expected 'struct'");
+    Token name = consume(TokenType::Identifier, "Expected struct name");
+    consume(TokenType::Colon, "Expected ':'");
+    consume(TokenType::NewLine, "Expected newline after struct header");
+    consume(TokenType::Indent, "Expected indentation");
+    
+    auto decl = std::make_unique<StructDecl>(name.text);
+    
+    while (!check(TokenType::Dedent) && !check(TokenType::EndOfFile)) {
+        if (check(TokenType::NewLine)) { advance(); continue; }
+        
+        Token fieldName = consume(TokenType::Identifier, "Expected field name");
+        consume(TokenType::Colon, "Expected ':'");
+        Token typeName = consume(TokenType::Identifier, "Expected type name"); 
+        consume(TokenType::NewLine, "Expected newline after field");
+        
+        decl->fields.emplace_back(fieldName.text, typeName.text, false, false);
+    }
+    
+    consume(TokenType::Dedent, "Expected dedent");
+    return decl;
+}
+
 std::unique_ptr<FunctionDecl> Parser::parseFunction() {
     consume(TokenType::Fn, "Expected 'fn'");
     Token name = consume(TokenType::Identifier, "Expected function name");
     consume(TokenType::LParen, "Expected '('");
-    // TODO: Params
+    
+    auto func = std::make_unique<FunctionDecl>(name.text);
+
+    while (!check(TokenType::RParen)) {
+        bool isMove = false;
+        bool isInOut = false;
+        if (match(TokenType::Move)) isMove = true;
+        else if (match(TokenType::Inout)) isInOut = true;
+        
+        Token pName = consume(TokenType::Identifier, "Expected param name");
+        consume(TokenType::Colon, "Expected ':'");
+        Token pType = consume(TokenType::Identifier, "Expected param type");
+        
+        func->params.emplace_back(pName.text, pType.text, isMove, isInOut);
+        
+        if (!check(TokenType::RParen)) {
+            consume(TokenType::Comma, "Expected ','");
+        }
+    }
+
     consume(TokenType::RParen, "Expected ')'");
     
-    // Return type optional -> skipping for now
+    // Return type optional
+    if (match(TokenType::Arrow)) {
+        Token retType = consume(TokenType::Identifier, "Expected return type");
+        func->returnType = retType.text;
+    }
     
     consume(TokenType::Colon, "Expected ':'");
     consume(TokenType::NewLine, "Expected newline after function header");
     
-    auto func = std::make_unique<FunctionDecl>(name.text);
     func->body = parseBlock();
     return func;
 }

@@ -20,6 +20,7 @@ private:
     Token consume(TokenType type, std::string message); // Expects type or throws/errors
 
     std::unique_ptr<FunctionDecl> parseFunction();
+    std::unique_ptr<StructDecl> parseStruct();
     std::unique_ptr<Stmt> parseStatement();
     std::unique_ptr<Expr> parseExpression();
     std::unique_ptr<Expr> parsePrimary();

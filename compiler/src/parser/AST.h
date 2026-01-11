@@ -52,17 +52,50 @@ struct ExprStmt : Stmt {
 };
 
 // --- Declarations ---
+struct Param {
+    std::string name;
+    std::string typeName; // Type reference by name for now
+    bool isMove;
+    bool isInOut;
+    
+    Param(std::string n, std::string t, bool m, bool i) 
+        : name(n), typeName(t), isMove(m), isInOut(i) {}
+};
+
 struct FunctionDecl : ASTNode {
     std::string name;
-    // TODO: Params
+    std::vector<Param> params;
+    std::string returnType;
     std::vector<std::unique_ptr<Stmt>> body;
     
     FunctionDecl(std::string n) : name(n) {}
     
     void print(int indent) const override {
-        std::cout << std::string(indent, ' ') << "Function: " << name << "\n";
+        std::cout << std::string(indent, ' ') << "Function: " << name << "(";
+        for (size_t i = 0; i < params.size(); ++i) {
+            if (i > 0) std::cout << ", ";
+            if (params[i].isMove) std::cout << "move ";
+            if (params[i].isInOut) std::cout << "inout ";
+            std::cout << params[i].name << ": " << params[i].typeName;
+        }
+        std::cout << ")" << (returnType.empty() ? "" : " -> " + returnType) << "\n";
+        
         for (const auto& stmt : body) {
             stmt->print(indent + 2);
+        }
+    }
+};
+
+struct StructDecl : ASTNode {
+    std::string name;
+    std::vector<Param> fields; // Reuse Param for fields (name: type) logic
+    
+    StructDecl(std::string n) : name(n) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Struct: " << name << "\n";
+        for (const auto& field : fields) {
+            std::cout << std::string(indent + 2, ' ') << field.name << ": " << field.typeName << "\n";
         }
     }
 };
