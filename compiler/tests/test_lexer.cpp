@@ -60,9 +60,54 @@ void test_indentation() {
     std::cout << "PASS" << std::endl;
 }
 
+void test_operators() {
+    std::cout << "Running test_operators..." << std::endl;
+    cool::Lexer lexer("+ - * / = == != < <= > >=");
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Plus);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Minus);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Star);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Slash);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Equal);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::EqualEqual);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::BangEqual);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Less);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::LessEqual);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Greater);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::GreaterEqual);
+    std::cout << "PASS" << std::endl;
+}
+
+void test_strings() {
+    std::cout << "Running test_strings..." << std::endl;
+    cool::Lexer lexer("\"hello\" \"world\"");
+    
+    cool::Token t1 = lexer.nextToken();
+    ASSERT_EQ((int)t1.type, (int)cool::TokenType::StringLiteral);
+    ASSERT_EQ(t1.text, "\"hello\""); 
+    
+    cool::Token t2 = lexer.nextToken();
+    ASSERT_EQ((int)t2.type, (int)cool::TokenType::StringLiteral);
+    ASSERT_EQ(t2.text, "\"world\"");
+    std::cout << "PASS" << std::endl;
+}
+
+void test_comments() {
+    std::cout << "Running test_comments..." << std::endl;
+    cool::Lexer lexer("# comment\nfn");
+    // Lexer emits NEWLINE for the \n after comment?
+    // skipWhitespace consumes #... until \n.
+    // Then scanToken switches on \n -> NEWLINE.
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::NewLine);
+    ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Fn);
+    std::cout << "PASS" << std::endl;
+}
+
 int main() {
     test_basic_tokens();
     test_indentation();
+    test_operators();
+    test_strings();
+    test_comments();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 }
