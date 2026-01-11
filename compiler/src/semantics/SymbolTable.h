@@ -11,7 +11,8 @@ enum class OwnershipState {
     Owned,          // Alive and owned
     Burned,         // Moved out
     Borrowed,       // Read-only view active
-    MutBorrowed     // Mutable view active (inout)
+    MutBorrowed,    // Mutable view active (inout)
+    Poisoned        // Inconsistent state
 };
 
 struct Symbol {
@@ -51,8 +52,19 @@ public:
         return nullptr;
     }
 
+    // Snapshotting for Branch Analysis
+    using State = std::vector<std::unordered_map<std::string, Symbol>>;
+    
+    State getSnapshot() const {
+        return scopes;
+    }
+    
+    void restoreSnapshot(const State& state) {
+        scopes = state;
+    }
+
 private:
-    std::vector<std::unordered_map<std::string, Symbol>> scopes;
+    State scopes;
 };
 
 } // namespace cool

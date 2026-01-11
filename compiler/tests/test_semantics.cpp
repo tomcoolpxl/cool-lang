@@ -123,4 +123,47 @@ TEST(test_semantic_analysis_no_escape) {
     ASSERT_EQ(output.find("Escape Error: Cannot return a View") != std::string::npos, true);
 }
 
+TEST(test_semantic_analysis_branch_consistency) {
+    auto func = std::make_unique<cool::FunctionDecl>("test_branch");
+    
+    // let x = 10
+    auto init = std::make_unique<cool::LiteralExpr>("10");
+    auto let = std::make_unique<cool::LetStmt>("x", std::move(init));
+    func->body.push_back(std::move(let));
+    
+    // if (1) { move x } else { }
+    auto cond = std::make_unique<cool::LiteralExpr>("1");
+    std::vector<std::unique_ptr<cool::Stmt>> thenBlock;
+    
+    // call(move x)
+    auto call = std::make_unique<cool::CallExpr>("consume");
+    auto var = std::make_unique<cool::VariableExpr>("x");
+    auto arg = std::make_unique<cool::Argument>(cool::Argument::Mode::Move, std::move(var));
+    call->args.push_back(std::move(arg));
+    thenBlock.push_back(std::make_unique<cool::ExprStmt>(std::move(call)));
+    
+    auto ifStmt = std::make_unique<cool::IfStmt>(std::move(cond), std::move(thenBlock));
+    func->body.push_back(std::move(ifStmt));
+    
+    // After if: return x
+    auto retVar = std::make_unique<cool::VariableExpr>("x");
+    auto ret = std::make_unique<cool::ReturnStmt>(std::move(retVar));
+    func->body.push_back(std::move(ret));
+    
+    cool::Program prog;
+    prog.decls.push_back(std::move(func));
+    
+    // Mock "consume"
+    auto consumeFunc = std::make_unique<cool::FunctionDecl>("consume");
+    prog.decls.push_back(std::move(consumeFunc));
+
+    cool::SemanticAnalyzer analyzer;
+    CaptureStderr capture;
+    bool result = analyzer.analyze(prog);
+    std::string output = capture.getOutput();
+    
+    ASSERT(!result);
+    ASSERT_EQ(output.find("Use of potentially moved value") != std::string::npos, true);
+}
+
 TEST_MAIN()

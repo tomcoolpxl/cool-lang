@@ -97,6 +97,28 @@ struct ExprStmt : Stmt {
     }
 };
 
+struct IfStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> thenBlock;
+    std::vector<std::unique_ptr<Stmt>> elseBlock;
+    
+    IfStmt(std::unique_ptr<Expr> cond, 
+           std::vector<std::unique_ptr<Stmt>> thenB,
+           std::vector<std::unique_ptr<Stmt>> elseB = {}) 
+        : condition(std::move(cond)), thenBlock(std::move(thenB)), elseBlock(std::move(elseB)) {}
+        
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "If\n";
+        condition->print(indent + 2);
+        std::cout << std::string(indent + 1, ' ') << "Then:\n";
+        for (const auto& stmt : thenBlock) stmt->print(indent + 2);
+        if (!elseBlock.empty()) {
+            std::cout << std::string(indent + 1, ' ') << "Else:\n";
+            for (const auto& stmt : elseBlock) stmt->print(indent + 2);
+        }
+    }
+};
+
 // --- Declarations ---
 struct Param {
     std::string name;
