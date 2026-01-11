@@ -24,6 +24,9 @@ struct Type {
     }
     
     virtual std::string toString() const { return name; }
+    
+    // Returns true if this type is a View (Transient) and cannot escape the stack.
+    virtual bool isTransient() const { return false; }
 };
 
 struct PrimitiveType : Type {
@@ -40,6 +43,15 @@ struct StructType : Type {
     StructType(std::string n) : Type(TypeKind::Struct, n) {}
 };
 
+struct ViewType : Type {
+    std::shared_ptr<Type> innerType;
+    
+    ViewType(std::shared_ptr<Type> inner) 
+        : Type(TypeKind::Primitive, "view[" + inner->toString() + "]"), innerType(inner) {}
+        
+    bool isTransient() const override { return true; }
+};
+
 class TypeRegistry {
 public:
     static std::shared_ptr<Type> Int32() { static auto t = std::make_shared<PrimitiveType>("i32"); return t; }
@@ -47,6 +59,10 @@ public:
     static std::shared_ptr<Type> Bool() { static auto t = std::make_shared<PrimitiveType>("bool"); return t; }
     static std::shared_ptr<Type> String() { static auto t = std::make_shared<PrimitiveType>("str"); return t; }
     static std::shared_ptr<Type> Void() { static auto t = std::make_shared<PrimitiveType>("void"); return t; }
+    
+    static std::shared_ptr<Type> View(std::shared_ptr<Type> inner) {
+        return std::make_shared<ViewType>(inner);
+    }
 };
 
 } // namespace cool

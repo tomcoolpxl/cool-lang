@@ -72,4 +72,11 @@ TEST(test_comments) {
     ASSERT_EQ((int)lexer.nextToken().type, (int)cool::TokenType::Fn);
 }
 
+TEST(test_token_strings) {
+    ASSERT_EQ(cool::tokenTypeToString(cool::TokenType::Fn), "fn");
+    ASSERT_EQ(cool::tokenTypeToString(cool::TokenType::Identifier), "Identifier");
+    ASSERT_EQ(cool::tokenTypeToString(cool::TokenType::NewLine), "NEWLINE");
+    ASSERT_EQ(cool::tokenTypeToString(cool::TokenType::EndOfFile), "EOF");
+}
+
 TEST_MAIN()

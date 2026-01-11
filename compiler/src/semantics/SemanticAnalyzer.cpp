@@ -29,10 +29,17 @@ void SemanticAnalyzer::visitProgram(const Program& prog) {
 }
 
 void SemanticAnalyzer::visitFunction(const FunctionDecl& func) {
+    // TODO: Parse return type from func.returnType string
+    currentReturnType = TypeRegistry::Void(); // Default to void for now
+    
     symbolTable.enterScope();
     for (const auto& param : func.params) {
-        // TODO: Resolve real type from param.typeName. Using Int32 placeholder.
-        auto type = TypeRegistry::Int32(); 
+        std::shared_ptr<Type> type;
+        if (param.typeName.find("view") == 0) {
+            type = TypeRegistry::View(TypeRegistry::Int32()); // Mock inner type
+        } else {
+            type = TypeRegistry::Int32();
+        }
         symbolTable.define(param.name, type);
     }
     visitBlock(func.body);
@@ -52,13 +59,18 @@ void SemanticAnalyzer::visitStmt(const Stmt& stmt) {
             throw std::runtime_error("Redefinition of variable: " + let->name);
         }
     } else if (auto ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
-        if (ret->value) visitExpr(*ret->value);
+        if (ret->value) {
+            auto type = visitExpr(*ret->value);
+            if (type && type->isTransient()) {
+                throw std::runtime_error("Escape Error: Cannot return a View (transient type) from a function.");
+            }
+        }
     } else if (auto exprStmt = dynamic_cast<const ExprStmt*>(&stmt)) {
         visitExpr(*exprStmt->expr);
     }
 }
 
-void SemanticAnalyzer::visitExpr(const Expr& expr) {
+std::shared_ptr<Type> SemanticAnalyzer::visitExpr(const Expr& expr) {
     if (auto var = dynamic_cast<const VariableExpr*>(&expr)) {
         Symbol* sym = symbolTable.resolve(var->name);
         if (!sym) {
@@ -68,6 +80,7 @@ void SemanticAnalyzer::visitExpr(const Expr& expr) {
         if (sym->state == OwnershipState::Burned) {
             throw std::runtime_error("Use of moved value: " + var->name);
         }
+        return sym->type;
     } else if (auto call = dynamic_cast<const CallExpr*>(&expr)) {
         // Check if function exists
         if (!symbolTable.resolve(call->name)) {
@@ -92,7 +105,9 @@ void SemanticAnalyzer::visitExpr(const Expr& expr) {
                 visitExpr(*arg->expr);
             }
         }
+        return TypeRegistry::Void(); // TODO: Return actual function return type
     }
+    return TypeRegistry::Void(); // Default for other expressions
 }
 
 } // namespace cool
