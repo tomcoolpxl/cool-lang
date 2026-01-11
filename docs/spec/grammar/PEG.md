@@ -60,13 +60,16 @@ MatchStmt       <- "match" _ Expression ":" INDENT ( Case )+ DEDENT
 Case            <- Identifier ( "(" _ Identifier _ ")" )? ":" INDENT Block DEDENT
 
 # --- Expressions ---
-Expression      <- TryExpr / TryPropagateExpr / LogicalExpr
+Expression      <- TryExpr / TryPropagateExpr / LambdaExpr / LogicalExpr
 
 # Postfix 'try' for Result types
 TryExpr         <- LogicalExpr _ "try" ( "(" _ Identifier _ ")" )? ":" INDENT Block DEDENT
 
 # Propagation operator '?'
 TryPropagateExpr <- LogicalExpr _ "?"
+
+# Lambda (Anonymous Function) - currently single expression body only for simplicity
+LambdaExpr      <- "|" _ Params? _ "|" _ Expression
 
 LogicalExpr     <- Equality ( ( "and" / "or" ) _ Equality )*
 Equality        <- Comparison ( ( "==" / "!=" / "is" ) _ Comparison )*
@@ -80,7 +83,9 @@ Argument        <- ( "move" _ / "copy" _ / "inout" _ )? Expression
 # --- Atoms ---
 Term            <- Identifier / Literal / "(" _ Expression _ ")"
 Identifier      <- [a-zA-Z_][a-zA-Z0-9_]*
-Literal         <- String / Float / Integer / Boolean / "None"
+Literal         <- FString / String / Float / Integer / Boolean / "None"
+FString         <- 'f"' ( [^"{\n] / "{" Expression "}" )* '"'
+String          <- '"' [^"]* '"' / "'" [^']* "'"
 
 # --- Whitespace & Terminals ---
 _               <- [ \t]* # Optional horizontal whitespace

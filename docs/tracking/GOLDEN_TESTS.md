@@ -30,7 +30,7 @@ fn worker(id: i32, ch: move Channel[str], db: move Database):
     while True:
         # receive() returns opt[str]
         if let line = ch.receive():
-            print("Worker " + str(id) + " processing: " + line)
+            print(f"Worker {id} processing: {line}")
             
             # Using 'try' block for local error handling (logging)
             db.write_entry(move line) try (err):

@@ -64,6 +64,9 @@ fn main():
 
 A **View** is a temporary, read-only permission to access data. It is the Coolscript alternative to borrowing.
 
+### Interior Mutability Exception
+While views are strictly read-only for standard types (`i32`, `List`, `User`), certain synchronization primitives in the standard library (such as `Atomic[T]` and `Mutex[T]`) allow **Interior Mutability**. This enables thread-safe state updates through a shared view. This is achieved via verified low-level intrinsics and is not available for standard user-defined structs.
+
 ### Transient Structs (Option C)
 
 Coolscript allows structs to contain `view` fields. However, any struct that contains a `view` is implicitly marked as **transient**.
@@ -140,25 +143,51 @@ let registry: Dict[str, User] = {}
 
 ```
 
-### Null Safety with Optional Types
+### String Interpolation (F-Strings)
 
-Coolscript does not have a `null` or `nil` value for standard types. All optionality must be explicitly handled using the `opt[T]` wrapper. The compiler forces the developer to check the status of an `opt` before accessing the underlying value using `if let` syntax.
+Coolscript supports Python-style string interpolation using the `f` prefix. This is syntactic sugar that the compiler lowers into efficient `StringBuilder` operations.
 
 ```python
-fn get_config(key: str) -> opt[str]:
-    if key == "theme":
-        return "dark"
-    return None
-
-fn main():
-    let theme = get_config("theme")
-    
-    if let val = theme:
-        print("Theme is: " + val)
-    else:
-        print("No theme set")
-
+let name = "Cool"
+let version = 1.0
+print(f"Welcome to {name} v{version}!")
 ```
+
+### The Drop Protocol
+
+Coolscript provides a deterministic way to clean up resources through the `Drop` protocol. 
+
+```python
+protocol Drop:
+    """
+    Called automatically by the compiler before an object is 
+    deallocated or burned.
+    """
+    fn drop(inout self)
+```
+
+If a struct implements `Drop`, the compiler ensures that the `drop` method is invoked exactly once when the object's lifecycle ends (at the end of a block or when moved into a "sink").
+
+**The No Resurrection Rule:**
+To prevent "zombie objects," the `drop` method cannot move `self` or any of its fields to a new owner. While `inout self` allows mutation (e.g., zeroing memory or closing handles), the ownership of the resource must remain with the compiler-managed cleanup process. Attempting to `move self` or `move self.field` inside a `drop` implementation results in a **Compile-Time Error**.
+
+---
+
+## Anonymous Functions (Lambdas)
+
+Coolscript supports inline anonymous functions for ergonomic functional programming (e.g., `map`, `filter`).
+
+```python
+let squared = list.map(|x| x * 2)
+```
+
+### Milestone 1: Non-Capturing
+In the initial release, lambdas are treated as **pure function pointers**. They cannot capture variables from the surrounding scope. This limitation ensures zero allocation and prevents hidden lifetime issues during the compiler's bootstrapping phase.
+
+### Future Vision: Full Closures
+In future versions, Coolscript will introduce **Capturing Closures**.
+*   **View Captures**: Will create a transient struct, valid only within the current stack frame (safe for `map`/`filter`).
+*   **Move Captures**: Will take ownership of captured variables, allowing the closure to be passed to `spawn` (e.g., `move |x| ...`).
 
 ---
 
@@ -234,12 +263,11 @@ fn check_status(s: view Status):
     match s:
         Status.Pending:
             print("Action is pending")
-        Status.Active:
-            print("Action is active")
-        Status.Closed(reason):
-            print("Closed because: " + reason)
-
-```
+                Status.Active:
+                    print("Action is active")
+                Status.Closed(reason):
+                    print(f"Closed because: {reason}")
+        ```
 
 ---
 
@@ -354,7 +382,8 @@ fn consumer(ch: view Channel[i32]):
 
     if let val = ch.receive():
 
-        print("Received: " + str(val))
+        print(f"Received: {val}")
+```
 
 
 
@@ -452,13 +481,13 @@ fn open_file(path: str) -> Result[File, IOError]:
 
 fn main():
 
-    # The 'try' block triggers on the 'Err' case
+        # The 'try' block triggers on the 'Err' case
 
-    let f = open_file("data.txt") try (err):
+        let f = open_file("data.txt") try (err):
 
-        print("Error: Could not open file: " + err.message)
+            print(f"Error: Could not open file: {err.message}")
 
-        return
+            return
 
     # 'f' is now a valid File object if 'try' didn't trigger the block
 

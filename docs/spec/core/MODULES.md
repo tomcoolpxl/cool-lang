@@ -62,10 +62,10 @@ my_project/
 
 ### Visibility Rules
 
-Coolscript adopts a simple naming convention for visibility, similar to Python but enforced by the compiler.
+Coolscript adopts a simple naming convention for visibility that is **strictly enforced by the compiler**.
 
-* **Public Symbols**: Any function, struct, protocol, or variable starting with a letter (a-z, A-Z) is public and accessible to other packages that import it.
-* **Private Symbols**: Any symbol starting with an underscore `_` is private to the package it is defined in.
+* **Public Symbols**: Any function, struct, protocol, or variable starting with a letter (a-z, A-Z) is public and accessible to other packages.
+* **Private Symbols**: Any symbol starting with an underscore `_` is private to the package it is defined in. Attempting to access a private symbol from an external package results in a **Compile-Time Error**.
 
 **Example of visibility in `utils/helpers.cool`:**
 
