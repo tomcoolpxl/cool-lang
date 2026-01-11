@@ -119,7 +119,7 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (check(TokenType::Identifier)) {
         Token t = current;
         advance();
-        return std::make_unique<LiteralExpr>(t.text); // Var usage
+        return std::make_unique<VariableExpr>(t.text);
     }
     std::cerr << "Unexpected token in expression: " << tokenTypeToString(current.type) << std::endl;
     exit(1);

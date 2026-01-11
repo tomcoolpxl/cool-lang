@@ -22,6 +22,14 @@ struct LiteralExpr : Expr {
     }
 };
 
+struct VariableExpr : Expr {
+    std::string name;
+    VariableExpr(std::string n) : name(n) {}
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Var: " << name << "\n";
+    }
+};
+
 // --- Statements ---
 struct Stmt : ASTNode {};
 
