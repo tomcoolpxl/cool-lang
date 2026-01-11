@@ -78,7 +78,7 @@ Because the code calling a Protocol method doesn't know the size of the underlyi
 1. **Ownership Ends**: A `move Speaker` variable goes out of scope.
 2. **Compiler Injection**: The compiler injects a call to the third entry in the VTable.
 3. **Execution**: The call jumps to `@__delete_Human(void* data)`.
-4. **Concrete Destruction**: This function casts the `void*` back to `Human*`, calls its internal destructor (to burn any fields inside), and then calls `cs_free()`.
+4. **Concrete Destruction**: This function casts the `void*` back to `Human*`. It invokes the `Drop.drop` method (if implemented) to release external resources, recursively calls destructors for all fields, and finally calls `cs_free()`.
 
 ---
 

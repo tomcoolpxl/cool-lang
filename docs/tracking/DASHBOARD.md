@@ -42,7 +42,7 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 ### Safety Guardrails
 
 * [ ] **Double-Move Check**: Ensure the compiler catches `move x` followed by `move x`.
-* [ ] **View-Escape Check**: Ensure `view T` cannot be stored in a `struct`.
+* [ ] **Transient Struct Check**: Ensure structs containing views ("Transient") cannot be stored in long-lived structures or globals.
 * [ ] **Isolation Check**: Ensure only `move` types can cross the `spawn` boundary.
 
 ### Performance Benchmarks

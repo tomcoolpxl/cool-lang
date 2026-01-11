@@ -80,10 +80,9 @@ In your C++ MLIR pass, you will implement this as a **Dataflow Analysis**.
 
 1. **Map Initialization**: Create a `DenseMap<Value, OwnershipState>` for the entry block.
 2. **Transfer Functions**:
-* `cool.move` transforms `Owned -> Burned`.
-* `cool.borrow` checks if `Owned`.
-
-
+    * `cool.move` transforms `Owned -> Burned`.
+    * `cool.borrow` checks if `Owned`. Adds `ReadLocked` state (optional optimization).
+    * `cool.inout` transforms `Owned -> WriteLocked`. The original variable is inaccessible until the scope of the `inout` ends, at which point it returns to `Owned`.
 3. **Meet Operator**: At the end of a region (like an `if` or `match`), you perform the "Meet" operation described above.
 
 ---

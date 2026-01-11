@@ -10,9 +10,9 @@ At the machine level, a `str` is a small descriptor.
 
 ```python
 struct str:
-    _ptr: view u8    # Pointer to the raw bytes
-    _len: i64        # Number of bytes
-    _is_owned: bool  # Flag to determine if the bytes need deallocation
+    _ptr: UnsafePtr[u8] # Pointer to the raw bytes
+    _len: i64           # Number of bytes
+    _is_owned: bool     # Flag to determine if the bytes need deallocation
 
 ```
 

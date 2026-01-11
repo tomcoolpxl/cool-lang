@@ -23,7 +23,7 @@ This **30-Day Implementation Roadmap** breaks down the development of the **Cool
 * Generate the "Ownership Traceback" error messages for invalid accesses.
 
 
-* **Day 14–15: No-Escape Verification.** Enforce the rule that `view` types cannot be stored in structs or returned from scopes that don't own the underlying data.
+* **Day 14–15: Transient Analysis (No-Escape).** Implement the logic to mark structs containing views as "Transient" and enforce that they cannot outlive their referents or be moved to long-lived scopes.
 
 ---
 
@@ -33,7 +33,7 @@ This **30-Day Implementation Roadmap** breaks down the development of the **Cool
 
 * **Day 16–18: Dialect Definition.** Define the `cool` MLIR dialect. Create operations for `cool.move`, `cool.borrow`, `cool.inout`, and `cool.box` (for Protocols).
 * **Day 19–21: AST-to-MLIR Lowering.** Translate the semantic-checked AST into the MLIR dialect.
-* **Day 22–23: Memory Lifetime Injection.** Since there is no GC, the compiler must inject `llvm.free` calls at the exact point a variable is "Burned" or its owner goes out of scope.
+* **Day 22–23: Memory Lifetime Injection.** Since there is no GC, the compiler must inject `llvm.free` calls (and `Drop.drop` invocations) at the exact point a variable is "Burned" or its owner goes out of scope.
 
 ---
 

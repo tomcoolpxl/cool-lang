@@ -525,6 +525,14 @@ Support for C is a first-class citizen. Using `import "C"` allows direct access 
 
 
 
+### Unsafe Pointers (`UnsafePtr[T]`)
+
+
+
+For implementing low-level primitives (like `List`, `str`, or custom allocators), Coolscript provides `UnsafePtr[T]`. This is a raw pointer that is **not** tracked by the ownership system. It can be null, dangling, or aliased. Dereferencing it is only allowed inside an `unsafe` block.
+
+
+
 ```python
 
 import "C"
@@ -535,7 +543,7 @@ extern "libc.so.6":
 
     fn printf(format: str, ...) -> i32
 
-    fn malloc(size: i64) -> view void
+    fn malloc(size: i64) -> UnsafePtr[u8]
 
     fn floor(x: f64) -> f64
 
