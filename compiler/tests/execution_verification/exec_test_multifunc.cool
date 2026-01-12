@@ -1,0 +1,11 @@
+fn double(x: i32):
+    return x * 2
+
+fn triple(x: i32):
+    return x * 3
+
+fn main():
+    let a = double(5)
+    let b = triple(3)
+    let result = a + b
+    print(result)

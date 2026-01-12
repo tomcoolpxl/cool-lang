@@ -1,0 +1,9 @@
+struct Point:
+    x: i32
+    y: i32
+
+fn get_x(p: Point):
+    return p.x
+
+fn main():
+    print(0)

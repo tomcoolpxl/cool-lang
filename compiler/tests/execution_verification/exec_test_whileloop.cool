@@ -1,0 +1,8 @@
+fn dummy():
+    print(1)
+
+fn main():
+    let x = 0
+    while x:
+        dummy()
+    print(99)

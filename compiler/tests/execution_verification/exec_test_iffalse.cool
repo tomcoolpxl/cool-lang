@@ -1,0 +1,4 @@
+fn main():
+    if 0:
+        print(0)
+    print(99)

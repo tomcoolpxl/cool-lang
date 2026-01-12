@@ -66,28 +66,38 @@ std::string compileAndExecute(const std::string& source, const std::string& test
     mlirOut << mlir;
     mlirOut.close();
     
+    // Convert arith/cf dialects to LLVM dialect
+    std::string mlirLoweredFile = "/tmp/exec_test_" + testName + "_lowered.mlir";
+    std::string lowerCmd = "/opt/llvm-mlir/bin/mlir-opt " + mlirFile + 
+                          " --convert-arith-to-llvm --convert-cf-to-llvm --convert-func-to-llvm" +
+                          " -o " + mlirLoweredFile + " 2>&1";
+    if (system(lowerCmd.c_str()) != 0) {
+        throw std::runtime_error("MLIR lowering failed");
+    }
+    
     // Try to convert MLIR to LLVM (if tools available)
     std::string llvmFile = "/tmp/exec_test_" + testName + ".ll";
-    std::string translateCmd = "mlir-translate --mlir-to-llvmir " + mlirFile + " -o " + llvmFile + " 2>/dev/null";
+    std::string translateCmd = "/opt/llvm-mlir/bin/mlir-translate --mlir-to-llvmir " + mlirLoweredFile + " -o " + llvmFile + " 2>&1";
     int translateResult = system(translateCmd.c_str());
     
     if (translateResult != 0) {
-        // If translation fails, fall back to MLIR pattern matching
-        return "MLIR_VERIFY:" + mlir;
+        throw std::runtime_error("MLIR translation failed");
     }
     
     // Compile LLVM to object
     std::string objFile = "/tmp/exec_test_" + testName + ".o";
-    std::string compileCmd = "llc -filetype=obj " + llvmFile + " -o " + objFile + " 2>/dev/null";
+    std::string compileCmd = "/opt/llvm-mlir/bin/llc -filetype=obj " + llvmFile + " -o " + objFile + " 2>&1";
     if (system(compileCmd.c_str()) != 0) {
-        return "MLIR_VERIFY:" + mlir;
+        throw std::runtime_error("LLVM compilation failed");
     }
     
     // Link to executable
     std::string exeFile = "/tmp/exec_test_" + testName;
-    std::string linkCmd = "gcc " + objFile + " -o " + exeFile + " 2>/dev/null";
+    std::string buildDir = std::string(BUILD_DIR);
+    std::string runtimeLib = buildDir + "/runtime/libcool_runtime.a";
+    std::string linkCmd = "gcc " + objFile + " " + runtimeLib + " -o " + exeFile + " -lpthread 2>&1";
     if (system(linkCmd.c_str()) != 0) {
-        return "MLIR_VERIFY:" + mlir;
+        throw std::runtime_error("Linking failed");
     }
     
     // Execute and capture output
@@ -110,162 +120,75 @@ std::string compileAndExecute(const std::string& source, const std::string& test
 // ===== EXECUTION: Basic Arithmetic =====
 
 TEST(exec_return_constant_value) {
-    std::string source = 
-        "fn main() -> i32:\n"
-        "    return 42\n";
-    
+    std::string source = readTestFile("exec_test_const42.cool");
     std::string result = compileAndExecute(source, "const42");
-    // Should compile successfully and return 0 (exit code, not output)
-    ASSERT(true);
+    ASSERT(result.find("42") != std::string::npos);
 }
 
 TEST(exec_simple_addition) {
-    std::string source = 
-        "fn add(a: i32, b: i32) -> i32:\n"
-        "    return a + b\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    return add(5, 3)\n";
-    
+    std::string source = readTestFile("exec_test_add53.cool");
     std::string result = compileAndExecute(source, "add53");
-    ASSERT(true);
+    ASSERT(result.find("8") != std::string::npos);
 }
 
 TEST(exec_arithmetic_chain) {
-    std::string source = 
-        "fn main() -> i32:\n"
-        "    let x = 10\n"
-        "    let y = 20\n"
-        "    let z = x + y\n"
-        "    return z * 2\n";
-    
+    std::string source = readTestFile("exec_test_chain.cool");
     std::string result = compileAndExecute(source, "chain");
-    // Result should be 60 (compiles and executes)
-    ASSERT(true);
+    ASSERT(result.find("60") != std::string::npos);
 }
 
 // ===== EXECUTION: Function Calls =====
 
 TEST(exec_nested_function_calls) {
-    std::string source = 
-        "fn inner(x: i32) -> i32:\n"
-        "    return x + 1\n"
-        "\n"
-        "fn middle(x: i32) -> i32:\n"
-        "    return inner(x * 2)\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    return middle(5)\n";
-    
+    std::string source = readTestFile("exec_test_nested.cool");
     std::string result = compileAndExecute(source, "nested");
-    // Result: inner(10) = 11
-    ASSERT(true);
+    ASSERT(result.find("11") != std::string::npos);
 }
 
 TEST(exec_multiple_function_calls) {
-    std::string source = 
-        "fn double(x: i32) -> i32:\n"
-        "    return x * 2\n"
-        "\n"
-        "fn triple(x: i32) -> i32:\n"
-        "    return x * 3\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    let a = double(5)\n"
-        "    let b = triple(3)\n"
-        "    return a + b\n";
-    
+    std::string source = readTestFile("exec_test_multifunc.cool");
     std::string result = compileAndExecute(source, "multifunc");
-    // Result: 10 + 9 = 19
-    ASSERT(true);
+    ASSERT(result.find("19") != std::string::npos);
 }
 
 // ===== EXECUTION: Control Flow =====
 
 TEST(exec_if_true_branch) {
-    std::string source = 
-        "fn main() -> i32:\n"
-        "    if 1:\n"
-        "        return 42\n"
-        "    return 0\n";
-    
+    std::string source = readTestFile("exec_test_iftrue.cool");
     std::string result = compileAndExecute(source, "iftrue");
-    ASSERT(true);
+    ASSERT(result.find("42") != std::string::npos);
 }
 
 TEST(exec_if_false_branch) {
-    std::string source = 
-        "fn main() -> i32:\n"
-        "    if 0:\n"
-        "        return 0\n"
-        "    return 99\n";
-    
+    std::string source = readTestFile("exec_test_iffalse.cool");
     std::string result = compileAndExecute(source, "iffalse");
-    ASSERT(true);
+    ASSERT(result.find("99") != std::string::npos);
 }
 
 TEST(exec_while_loop_simple) {
-    // While loop with simplest body
-    std::string source = 
-        "fn dummy():\n"
-        "    print(1)\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    let x = 0\n"
-        "    while x:\n"
-        "        dummy()\n"
-        "    return 99\n";
-    
+    std::string source = readTestFile("exec_test_whileloop.cool");
     std::string result = compileAndExecute(source, "whileloop");
-    ASSERT(true);
+    ASSERT(result.find("99") != std::string::npos);
 }
 
 // ===== EXECUTION: Complex Programs =====
 
 TEST(exec_struct_operations) {
-    std::string source = 
-        "struct Point:\n"
-        "    x: i32\n"
-        "    y: i32\n"
-        "\n"
-        "fn get_x(p: Point) -> i32:\n"
-        "    return p.x\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    return 0\n";
-    
+    std::string source = readTestFile("exec_test_struct.cool");
     std::string result = compileAndExecute(source, "struct");
-    ASSERT(true);
+    ASSERT(result.find("0") != std::string::npos);
 }
 
 TEST(exec_combined_all_features) {
-    std::string source = 
-        "fn add(a: i32, b: i32) -> i32:\n"
-        "    return a + b\n"
-        "\n"
-        "fn main() -> i32:\n"
-        "    let x = 10\n"
-        "    let y = 20\n"
-        "    let z = add(x, y)\n"
-        "    if z > 25:\n"
-        "        return z\n"
-        "    return 0\n";
-    
+    std::string source = readTestFile("exec_test_combined.cool");
     std::string result = compileAndExecute(source, "combined");
-    // Result: 30 > 25, return 30
-    ASSERT(true);
+    ASSERT(result.find("30") != std::string::npos);
 }
 
 TEST(exec_loop_with_arithmetic) {
-    // Note: While loops currently have parser issues with indentation
-    // This test verifies the framework compiles and runs
-    std::string source = 
-        "fn main() -> i32:\n"
-        "    let result = 16\n"
-        "    return result\n";
-    
+    std::string source = readTestFile("exec_test_loopmath.cool");
     std::string result = compileAndExecute(source, "loopmath");
-    ASSERT(true);
+    ASSERT(result.find("16") != std::string::npos);
 }
 
 TEST_MAIN();

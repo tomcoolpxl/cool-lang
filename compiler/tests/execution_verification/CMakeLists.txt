@@ -7,6 +7,10 @@ add_executable(run_execution_verification_tests
     test_execution_real.cpp
 )
 
+target_compile_definitions(run_execution_verification_tests PRIVATE
+    BUILD_DIR="${CMAKE_BINARY_DIR}"
+)
+
 target_link_libraries(run_execution_verification_tests
     cool_lib
 )

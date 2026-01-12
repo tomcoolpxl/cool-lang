@@ -1,0 +1,9 @@
+fn inner(x: i32):
+    return x + 1
+
+fn middle(x: i32):
+    return inner(x * 2)
+
+fn main():
+    let result = middle(5)
+    print(result)
