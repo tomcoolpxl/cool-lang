@@ -1,9 +1,9 @@
 # Coolscript Implementation Tracking
 
 ## Current Status
-**Phase:** Milestone 1 (Implementation)
-**Focus:** Transient Analysis & MLIR Dialect.
-**Completed:** Lexer, Parser, AST, Semantic Analysis (Linear Types).
+**Phase:** Milestone 1 (Week 3)
+**Focus:** MLIR Code Generation & LLVM Integration.
+**Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape), Textual MLIR Codegen.
 
 ## Dashboards
 *   [Implementation Dashboard](DASHBOARD.md): detailed task breakdown and status for the 90-day sprint.

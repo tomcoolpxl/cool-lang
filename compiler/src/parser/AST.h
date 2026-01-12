@@ -6,13 +6,18 @@
 
 namespace cool {
 
+// Forward declaration to avoid circular dependency
+struct Type;
+
 struct ASTNode {
     virtual ~ASTNode() = default;
     virtual void print(int indent = 0) const = 0;
 };
 
 // --- Expressions ---
-struct Expr : ASTNode {};
+struct Expr : ASTNode {
+    std::shared_ptr<Type> resolvedType;
+};
 
 struct Argument : ASTNode {
     enum class Mode { View, Move, Copy, InOut };
@@ -50,14 +55,27 @@ struct VariableExpr : Expr {
     }
 };
 
-struct CallExpr : Expr {
-    std::string name;
-    std::vector<std::unique_ptr<Argument>> args;
+struct MemberAccessExpr : Expr {
+    std::unique_ptr<Expr> object;
+    std::string member;
     
-    CallExpr(std::string n) : name(n) {}
+    MemberAccessExpr(std::unique_ptr<Expr> o, std::string m) : object(std::move(o)), member(m) {}
     
     void print(int indent) const override {
-        std::cout << std::string(indent, ' ') << "Call: " << name << "\n";
+        std::cout << std::string(indent, ' ') << "MemberAccess: ." << member << "\n";
+        object->print(indent + 2);
+    }
+};
+
+struct CallExpr : Expr {
+    std::unique_ptr<Expr> callee;
+    std::vector<std::unique_ptr<Argument>> args;
+    
+    CallExpr(std::unique_ptr<Expr> c) : callee(std::move(c)) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Call:\n";
+        callee->print(indent + 2);
         for (const auto& arg : args) {
             arg->print(indent + 2);
         }
@@ -116,6 +134,21 @@ struct IfStmt : Stmt {
             std::cout << std::string(indent + 1, ' ') << "Else:\n";
             for (const auto& stmt : elseBlock) stmt->print(indent + 2);
         }
+    }
+};
+
+struct WhileStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> body;
+    
+    WhileStmt(std::unique_ptr<Expr> cond, std::vector<std::unique_ptr<Stmt>> b) 
+        : condition(std::move(cond)), body(std::move(b)) {}
+        
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "While\n";
+        condition->print(indent + 2);
+        std::cout << std::string(indent + 1, ' ') << "Body:\n";
+        for (const auto& stmt : body) stmt->print(indent + 2);
     }
 };
 

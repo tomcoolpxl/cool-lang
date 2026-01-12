@@ -70,7 +70,8 @@ TEST(test_semantic_analysis_double_move) {
     func->body.push_back(std::move(let));
     
     // call(move y, move y)
-    auto call = std::make_unique<cool::CallExpr>("some_func");
+    auto callVar = std::make_unique<cool::VariableExpr>("some_func");
+    auto call = std::make_unique<cool::CallExpr>(std::move(callVar));
     
     auto var1 = std::make_unique<cool::VariableExpr>("y");
     auto arg1 = std::make_unique<cool::Argument>(cool::Argument::Mode::Move, std::move(var1));
@@ -136,7 +137,8 @@ TEST(test_semantic_analysis_branch_consistency) {
     std::vector<std::unique_ptr<cool::Stmt>> thenBlock;
     
     // call(move x)
-    auto call = std::make_unique<cool::CallExpr>("consume");
+    auto callVar = std::make_unique<cool::VariableExpr>("consume");
+    auto call = std::make_unique<cool::CallExpr>(std::move(callVar));
     auto var = std::make_unique<cool::VariableExpr>("x");
     auto arg = std::make_unique<cool::Argument>(cool::Argument::Mode::Move, std::move(var));
     call->args.push_back(std::move(arg));
@@ -164,6 +166,56 @@ TEST(test_semantic_analysis_branch_consistency) {
     
     ASSERT(!result);
     ASSERT_EQ(output.find("Use of potentially moved value") != std::string::npos, true);
+}
+
+TEST(test_semantic_analysis_transient_struct_escape) {
+    cool::Program prog;
+    
+    // struct MyView:
+    //     f: view i32
+    auto strct = std::make_unique<cool::StructDecl>("MyView");
+    strct->fields.push_back(cool::Param("f", "view i32", false, false));
+    prog.decls.push_back(std::move(strct));
+    
+    // fn test(v: MyView) -> MyView:
+    //     return v
+    auto func = std::make_unique<cool::FunctionDecl>("test");
+    func->params.push_back(cool::Param("v", "MyView", false, false));
+    func->returnType = "MyView";
+    
+    auto var = std::make_unique<cool::VariableExpr>("v");
+    func->body.push_back(std::make_unique<cool::ReturnStmt>(std::move(var)));
+    prog.decls.push_back(std::move(func));
+
+    cool::SemanticAnalyzer analyzer;
+    CaptureStderr capture;
+    bool result = analyzer.analyze(prog);
+    std::string output = capture.getOutput();
+    
+    ASSERT(!result);
+    ASSERT_EQ(output.find("Escape Error: Cannot return a View") != std::string::npos, true);
+}
+
+TEST(test_semantic_analysis_loop_move_error) {
+    std::string source = 
+        "fn consume(move x: i32) -> i32:\n"
+        "    return 0\n"
+        "fn main() -> i32:\n"
+        "    let y = 10\n"
+        "    while 1:\n"
+        "        consume(move y)\n"
+        "    return 0\n";
+    cool::Lexer lexer(source);
+    cool::Parser parser(lexer);
+    auto prog = parser.parseProgram();
+    
+    cool::SemanticAnalyzer analyzer;
+    CaptureStderr capture;
+    bool result = analyzer.analyze(*prog);
+    std::string output = capture.getOutput();
+    
+    ASSERT(!result);
+    ASSERT_EQ(output.find("inconsistent ownership state") != std::string::npos, true);
 }
 
 TEST_MAIN()

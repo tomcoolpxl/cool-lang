@@ -81,6 +81,6 @@ Or potentially via `make test` if available.
 *   **Comments:** Use `#` for single-line comments.
 
 ## Current Status (Milestone 1)
-*   **Focus:** Core Engine Implementation.
-*   **Completed:** Lexer, Parser, AST, Semantic Analysis (Linear Types).
-*   **Active Tasks:** Implementing Transient Analysis (No-Escape Rule) and MLIR Dialect.
+*   **Focus:** Core Engine Implementation (Week 3).
+*   **Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape Rule), Textual MLIR Codegen.
+*   **Active Tasks:** MLIR/LLVM Library Integration and C Runtime.

@@ -16,9 +16,13 @@ private:
     
     void visitProgram(const Program& prog);
     void visitFunction(const FunctionDecl& func);
+    void visitStruct(const StructDecl& strct);
     void visitBlock(const std::vector<std::unique_ptr<Stmt>>& stmts);
     void visitStmt(const Stmt& stmt);
     std::shared_ptr<Type> visitExpr(const Expr& expr);
+
+    std::unordered_map<std::string, std::shared_ptr<Type>> typeRegistry;
+    std::shared_ptr<Type> resolveType(const std::string& name);
 };
 
 } // namespace cool

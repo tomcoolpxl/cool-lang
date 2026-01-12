@@ -135,6 +135,8 @@ std::vector<std::unique_ptr<Stmt>> Parser::parseBlock() {
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
     if (check(TokenType::Let)) return parseLetStmt();
+    if (check(TokenType::If)) return parseIfStmt();
+    if (check(TokenType::While)) return parseWhileStmt();
 
     if (match(TokenType::Return)) {
         std::unique_ptr<Expr> value = nullptr;
@@ -159,11 +161,54 @@ std::unique_ptr<Stmt> Parser::parseLetStmt() {
     return std::make_unique<LetStmt>(name.text, std::move(init));
 }
 
-std::unique_ptr<Expr> Parser::parseExpression() {
-    return parsePrimary(); 
+std::unique_ptr<Stmt> Parser::parseIfStmt() {
+    consume(TokenType::If, "Expected 'if'");
+    auto condition = parseExpression();
+    consume(TokenType::Colon, "Expected ':' after if condition");
+    consume(TokenType::NewLine, "Expected newline after if header");
+    auto thenBlock = parseBlock();
+    
+    std::vector<std::unique_ptr<Stmt>> elseBlock;
+    if (check(TokenType::Elif)) {
+        elseBlock.push_back(parseIfStmt());
+    } else if (match(TokenType::Else)) {
+        consume(TokenType::Colon, "Expected ':' after else");
+        consume(TokenType::NewLine, "Expected newline after else header");
+        elseBlock = parseBlock();
+    }
+    
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBlock), std::move(elseBlock));
 }
 
-std::unique_ptr<Expr> Parser::parsePrimary() {
+std::unique_ptr<Stmt> Parser::parseWhileStmt() {
+    consume(TokenType::While, "Expected 'while'");
+    auto condition = parseExpression();
+    consume(TokenType::Colon, "Expected ':' after while condition");
+    consume(TokenType::NewLine, "Expected newline after while header");
+    auto body = parseBlock();
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Expr> Parser::parseExpression() {
+    return parsePostfix(); 
+}
+
+std::unique_ptr<Expr> Parser::parsePostfix() {
+    auto expr = parseAtomic();
+    while (true) {
+        if (check(TokenType::LParen)) {
+            expr = parseCall(std::move(expr));
+        } else if (match(TokenType::Dot)) {
+            Token member = consume(TokenType::Identifier, "Expected member name after '.'");
+            expr = std::make_unique<MemberAccessExpr>(std::move(expr), member.text);
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::parseAtomic() {
     if (check(TokenType::IntegerLiteral)) {
         Token t = current;
         advance();
@@ -172,18 +217,15 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (check(TokenType::Identifier)) {
         Token t = current;
         advance();
-        if (check(TokenType::LParen)) {
-            return parseCall(t.text);
-        }
         return std::make_unique<VariableExpr>(t.text);
     }
     std::cerr << "Unexpected token in expression: " << tokenTypeToString(current.type) << " (" << current.text << ")" << std::endl;
     exit(1);
 }
 
-std::unique_ptr<Expr> Parser::parseCall(std::string name) {
+std::unique_ptr<Expr> Parser::parseCall(std::unique_ptr<Expr> callee) {
     consume(TokenType::LParen, "Expected '('");
-    auto call = std::make_unique<CallExpr>(name);
+    auto call = std::make_unique<CallExpr>(std::move(callee));
     
     while (!check(TokenType::RParen)) {
         Argument::Mode mode = Argument::Mode::View;

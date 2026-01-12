@@ -23,9 +23,12 @@ private:
     std::unique_ptr<StructDecl> parseStruct();
     std::unique_ptr<Stmt> parseStatement();
     std::unique_ptr<Stmt> parseLetStmt();
+    std::unique_ptr<Stmt> parseIfStmt();
+    std::unique_ptr<Stmt> parseWhileStmt();
     std::unique_ptr<Expr> parseExpression();
-    std::unique_ptr<Expr> parsePrimary();
-    std::unique_ptr<Expr> parseCall(std::string name);
+    std::unique_ptr<Expr> parseAtomic();
+    std::unique_ptr<Expr> parsePostfix();
+    std::unique_ptr<Expr> parseCall(std::unique_ptr<Expr> callee);
     
     std::vector<std::unique_ptr<Stmt>> parseBlock();
 };

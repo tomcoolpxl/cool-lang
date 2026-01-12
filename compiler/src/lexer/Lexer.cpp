@@ -133,12 +133,25 @@ Token Lexer::scanIdentifier() {
     // Keyword check
     if (text == "fn") return makeToken(TokenType::Fn, text);
     if (text == "struct") return makeToken(TokenType::Struct, text);
+    if (text == "protocol") return makeToken(TokenType::Protocol, text);
     if (text == "let") return makeToken(TokenType::Let, text);
     if (text == "if") return makeToken(TokenType::If, text);
     if (text == "else") return makeToken(TokenType::Else, text);
+    if (text == "elif") return makeToken(TokenType::Elif, text);
+    if (text == "while") return makeToken(TokenType::While, text);
+    if (text == "for") return makeToken(TokenType::For, text);
+    if (text == "match") return makeToken(TokenType::Match, text);
     if (text == "return") return makeToken(TokenType::Return, text);
     if (text == "move") return makeToken(TokenType::Move, text);
     if (text == "view") return makeToken(TokenType::View, text);
+    if (text == "inout") return makeToken(TokenType::Inout, text);
+    if (text == "copy") return makeToken(TokenType::Copy, text);
+    if (text == "shared") return makeToken(TokenType::Shared, text);
+    if (text == "unsafe") return makeToken(TokenType::Unsafe, text);
+    if (text == "try") return makeToken(TokenType::Try, text);
+    if (text == "const") return makeToken(TokenType::Const, text);
+    if (text == "import") return makeToken(TokenType::Import, text);
+    if (text == "as") return makeToken(TokenType::As, text);
     
     return makeToken(TokenType::Identifier, text);
 }

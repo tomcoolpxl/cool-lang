@@ -41,6 +41,15 @@ struct StructType : Type {
     std::vector<Field> fields;
     
     StructType(std::string n) : Type(TypeKind::Struct, n) {}
+
+    bool isTransient() const override {
+        for (const auto& field : fields) {
+            if (field.type && field.type->isTransient()) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 struct ViewType : Type {

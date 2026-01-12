@@ -3,6 +3,7 @@ add_library(cool_lib OBJECT
     lexer/Token.cpp
     parser/Parser.cpp
     semantics/SemanticAnalyzer.cpp
+    codegen/MLIRGenerator.cpp
 )
 target_include_directories(cool_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
