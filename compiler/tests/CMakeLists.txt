@@ -18,3 +18,7 @@ add_test(NAME CodegenTest COMMAND run_codegen_tests)
 add_executable(run_fn_keyword_tests test_fn_keyword.cpp)
 target_link_libraries(run_fn_keyword_tests PRIVATE cool_lib)
 add_test(NAME FnKeywordTest COMMAND run_fn_keyword_tests)
+
+add_executable(run_integration_tests test_integration.cpp)
+target_link_libraries(run_integration_tests PRIVATE cool_lib)
+add_test(NAME IntegrationTest COMMAND run_integration_tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
