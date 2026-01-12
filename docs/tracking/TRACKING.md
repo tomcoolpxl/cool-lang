@@ -3,8 +3,8 @@
 ## Current Status
 **Phase:** Milestone 1 (Week 4)
 **Focus:** Runtime & Concurrency (C Runtime, Channels, Task Spawning).
-**Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape), Textual MLIR Codegen, LLVM Integration & Object File Generation.
-**Active Tasks:** C Runtime Implementation (Channels, Task Spawning).
+**Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape), Textual MLIR Codegen, LLVM Integration & Object File Generation, Basic Runtime (Alloc/Spawn/Print/Sleep).
+**Active Tasks:** Exposing Channels to Coolscript.
 
 ## Dashboards
 *   [Implementation Dashboard](DASHBOARD.md): detailed task breakdown and status for the 90-day sprint.

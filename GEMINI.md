@@ -82,5 +82,5 @@ Or potentially via `make test` if available.
 
 ## Current Status (Milestone 1)
 *   **Focus:** Runtime & Concurrency (Week 4).
-*   **Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape Rule), Textual MLIR Codegen, LLVM Integration.
-*   **Active Tasks:** C Runtime Implementation.
+*   **Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape Rule), Textual MLIR Codegen, LLVM Integration, Basic C Runtime, Build System.
+*   **Active Tasks:** Exposing Channels to Coolscript.
