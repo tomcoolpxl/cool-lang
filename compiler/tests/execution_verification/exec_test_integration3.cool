@@ -1,0 +1,17 @@
+# Complex integration test 3: nested function calls, multiple branches
+fn foo(x: i32):
+    if x > 10:
+        print(x)
+    else:
+        print(0)
+
+fn bar(y: i32):
+    foo(y + 5)
+    foo(y - 5)
+
+fn main():
+    let a = 12
+    let b = 7
+    bar(a)
+    bar(b)
+    print(100)

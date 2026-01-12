@@ -191,4 +191,33 @@ TEST(exec_loop_with_arithmetic) {
     ASSERT(result.find("16") != std::string::npos);
 }
 
+// ===== EXECUTION: Integration Tests =====
+
+TEST(exec_integration_1) {
+    std::string source = readTestFile("exec_test_integration1.cool");
+    std::string result = compileAndExecute(source, "integration1");
+    ASSERT(result.find("21") != std::string::npos); // inner(5): add(5,2)=7, mul(7,3)=21
+    ASSERT(result.find("15") != std::string::npos); // add(5,10)=15
+    ASSERT(result.find("99") != std::string::npos);
+}
+
+TEST(exec_integration_2) {
+    std::string source = readTestFile("exec_test_integration2.cool");
+    std::string result = compileAndExecute(source, "integration2");
+    ASSERT(result.find("0") != std::string::npos); // print_if_even(0)
+    ASSERT(result.find("2") != std::string::npos); // print_if_even(2)
+    ASSERT(result.find("4") != std::string::npos); // print_if_even(4)
+    ASSERT(result.find("42") != std::string::npos);
+}
+
+TEST(exec_integration_3) {
+    std::string source = readTestFile("exec_test_integration3.cool");
+    std::string result = compileAndExecute(source, "integration3");
+    ASSERT(result.find("17") != std::string::npos); // foo(12+5)=17
+    ASSERT(result.find("7") != std::string::npos);  // foo(12-5)=7
+    ASSERT(result.find("12") != std::string::npos); // foo(7+5)=12
+    ASSERT(result.find("0") != std::string::npos);  // foo(7-5)=2, else branch
+    ASSERT(result.find("100") != std::string::npos);
+}
+
 TEST_MAIN();

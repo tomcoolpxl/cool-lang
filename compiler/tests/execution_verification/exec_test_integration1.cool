@@ -1,0 +1,18 @@
+# Complex integration test 1: nested functions, arithmetic, control flow
+fn add(a: i32, b: i32):
+    return a + b
+
+fn mul(a: i32, b: i32):
+    return a * b
+
+fn inner(x: i32):
+    let y = add(x, 2)
+    let z = mul(y, 3)
+    print(z)
+
+fn main():
+    let a = 5
+    inner(a)
+    if a:
+        print(add(a, 10))
+    print(99)
