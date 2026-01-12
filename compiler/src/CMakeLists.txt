@@ -12,7 +12,7 @@ target_include_directories(cool_lib PUBLIC
 
 add_executable(coolc main.cpp)
 target_link_libraries(coolc PRIVATE cool_lib 
-    MLIRIR MLIRParser MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRSupport MLIRLLVMDialect
+    MLIRIR MLIRParser MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRControlFlowDialect MLIRSupport MLIRLLVMDialect
     MLIRFuncToLLVM MLIRArithToLLVM MLIRSCFToControlFlow MLIRControlFlowToLLVM MLIRTargetLLVMIRExport MLIRLLVMToLLVMIRTranslation MLIRBuiltinToLLVMIRTranslation
     LLVMTarget LLVMCore LLVMSupport LLVMX86CodeGen LLVMAsmParser LLVMAsmPrinter LLVMX86AsmParser LLVMX86Desc LLVMX86Info
 )

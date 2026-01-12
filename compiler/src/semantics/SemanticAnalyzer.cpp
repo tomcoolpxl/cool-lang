@@ -36,6 +36,10 @@ void SemanticAnalyzer::visitProgram(const Program& prog) {
         }
     }
     
+    // Register built-ins
+    symbolTable.define("print", TypeRegistry::Void());
+    symbolTable.define("sleep", TypeRegistry::Void());
+    
     // Pass 4: Visit function bodies
     for (const auto& decl : prog.decls) {
         if (auto func = dynamic_cast<const FunctionDecl*>(decl.get())) {
@@ -186,6 +190,33 @@ void SemanticAnalyzer::visitStmt(const Stmt& stmt) {
             }
         }
 
+    } else if (auto spawn = dynamic_cast<const SpawnStmt*>(&stmt)) {
+        // Analyze the call inside spawn
+        // We need to verify that arguments are "Send" safe.
+        // For Milestone 1, this means:
+        // 1. Primitives (i32, bool) are safe.
+        // 2. Linear types (User, List) MUST be moved.
+        // 3. Views cannot be spawned.
+        
+        // We visit the call expression to resolve types and check basic validity
+        visitExpr(*spawn->call);
+        
+        for (const auto& arg : spawn->call->args) {
+            auto type = arg->expr->resolvedType;
+            if (!type) continue; // Error already handled?
+            
+            // Check for View
+            if (std::dynamic_pointer_cast<ViewType>(type)) {
+                throw std::runtime_error("Spawn Error: Cannot pass a 'view' to a spawned task. Views are bound to the stack.");
+            }
+            
+            // Check for Linear Types
+            if (!type->isCopy()) {
+                if (arg->mode != Argument::Mode::Move) {
+                     throw std::runtime_error("Spawn Error: Non-copyable type must be moved into spawn.");
+                }
+            }
+        }
     } else if (auto exprStmt = dynamic_cast<const ExprStmt*>(&stmt)) {
         visitExpr(*exprStmt->expr);
     }

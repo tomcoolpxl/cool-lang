@@ -6,9 +6,22 @@ namespace cool {
 
 std::string MLIRGenerator::generate(const Program& program) {
     output.str("");
+    wrappers.str("");
     output << "module {\n";
     indentLevel++;
+    
+    // Declare Runtime Functions
+    emit("func.func private @cs_alloc(i64) -> !llvm.ptr");
+    emit("func.func private @cs_free(!llvm.ptr) -> ()");
+    emit("func.func private @cs_spawn((!llvm.ptr)->(), !llvm.ptr) -> ()");
+    emit("func.func private @cs_print_int(i32) -> ()");
+    emit("func.func private @cs_sleep(i32) -> ()");
+    
     visitProgram(program);
+    
+    // Append wrappers
+    output << wrappers.str();
+    
     indentLevel--;
     output << "}\n";
     return output.str();
@@ -92,7 +105,7 @@ void MLIRGenerator::visitFunction(const FunctionDecl& func) {
     // Ensure return if void and missing
     // (Simplification: if last stmt wasn't return)
     if (func.returnType.empty() || func.returnType == "void") {
-        emit("return");
+        emit("func.return");
     }
     
     exitScope();
@@ -117,49 +130,110 @@ void MLIRGenerator::visitStmt(const Stmt& stmt) {
     } else if (auto ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
         if (ret->value) {
             std::string val = visitExpr(*ret->value);
-            emit("return " + val + " : i32");
+            emit("func.return " + val + " : i32");
         } else {
-            emit("return");
+            emit("func.return");
         }
     } else if (auto exprStmt = dynamic_cast<const ExprStmt*>(&stmt)) {
         visitExpr(*exprStmt->expr);
     } else if (auto ifStmt = dynamic_cast<const IfStmt*>(&stmt)) {
+        std::string thenLabel = "^bb_then_" + std::to_string(ssaCounter++);
+        std::string elseLabel = "^bb_else_" + std::to_string(ssaCounter++);
+        std::string contLabel = "^bb_cont_" + std::to_string(ssaCounter++);
+        
         std::string cond = visitExpr(*ifStmt->condition);
-        emit("scf.if " + cond + " {");
+        
+        if (!ifStmt->elseBlock.empty()) {
+            emit("cf.cond_br " + cond + ", " + thenLabel + ", " + elseLabel);
+        } else {
+            emit("cf.cond_br " + cond + ", " + thenLabel + ", " + contLabel);
+        }
+        
+        emit(thenLabel + ":");
         indentLevel++;
         visitBlock(ifStmt->thenBlock);
-        // implicit yield? scf.if doesn't yield if it doesn't return values.
+        if (ifStmt->thenBlock.empty() || !dynamic_cast<const ReturnStmt*>(ifStmt->thenBlock.back().get())) {
+            emit("cf.br " + contLabel);
+        }
         indentLevel--;
+        
         if (!ifStmt->elseBlock.empty()) {
-            emit("} else {");
+            emit(elseLabel + ":");
             indentLevel++;
             visitBlock(ifStmt->elseBlock);
+            if (ifStmt->elseBlock.empty() || !dynamic_cast<const ReturnStmt*>(ifStmt->elseBlock.back().get())) {
+                emit("cf.br " + contLabel);
+            }
             indentLevel--;
+        } else {
+            // elseLabel is implicit contLabel? No, defined above.
+            // If no else block, we branched to contLabel or elseLabel? 
+            // Logic above: if else empty, branch to contLabel.
+            // So elseLabel is unused.
         }
-        emit("}");
-    } else if (auto whileStmt = dynamic_cast<const WhileStmt*>(&stmt)) {
-        // Simple while loop lowering
-        // scf.while (%arg...) : (types...) -> (types...) {
-        //   %cond = ...
-        //   scf.condition(%cond) %args...
-        // } do {
-        //   ^bb0(%arg...):
-        //   ... body ...
-        //   scf.yield %updated_args...
-        // }
         
-        // For Milestone 1, we treat it as having NO loop-carried state (simplification).
-        emit("scf.while () : () -> () {");
+        emit(contLabel + ":");
+        
+    } else if (auto whileStmt = dynamic_cast<const WhileStmt*>(&stmt)) {
+        std::string condLabel = "^bb_while_cond_" + std::to_string(ssaCounter++);
+        std::string bodyLabel = "^bb_while_body_" + std::to_string(ssaCounter++);
+        std::string contLabel = "^bb_while_cont_" + std::to_string(ssaCounter++);
+        
+        emit("cf.br " + condLabel);
+        
+        emit(condLabel + ":");
         indentLevel++;
         std::string cond = visitExpr(*whileStmt->condition);
-        emit("scf.condition(" + cond + ")");
+        emit("cf.cond_br " + cond + ", " + bodyLabel + ", " + contLabel);
         indentLevel--;
-        emit("} do {");
+        
+        emit(bodyLabel + ":");
         indentLevel++;
         visitBlock(whileStmt->body);
-        emit("scf.yield");
+        emit("cf.br " + condLabel);
         indentLevel--;
-        emit("}");
+        
+        emit(contLabel + ":");
+        
+    } else if (auto spawnStmt = dynamic_cast<const SpawnStmt*>(&stmt)) {
+        // 1. Resolve Callee
+        auto call = spawnStmt->call.get();
+        std::string funcName = "unknown";
+        if (auto v = dynamic_cast<const VariableExpr*>(call->callee.get())) {
+            funcName = v->name;
+        }
+        
+        // 2. Prepare Wrapper Name
+        std::string wrapperName = "spawn_wrapper_" + std::to_string(wrapperCounter++);
+        
+        // 3. Generate Wrapper (Assume single i32 arg for M1)
+        std::stringstream w;
+        w << "  func.func @" << wrapperName << "(%arg: !llvm.ptr) {\n";
+        w << "    %val = llvm.load %arg : !llvm.ptr -> i32\n"; // Simplified load for M1
+        w << "    func.call @" << funcName << "(%val) : (i32) -> i32\n"; // Assuming returns i32 for now
+        w << "    func.call @cs_free(%arg) : (!llvm.ptr) -> ()\n";
+        w << "    func.return\n";
+        w << "  }\n";
+        wrappers << w.str();
+        
+        // 4. Emit Call Site
+        
+        // Evaluate Argument
+        std::string valSSA = visitExpr(*call->args[0]->expr); // Assume 1 arg
+        
+        std::string sizeSSA = nextSSA();
+        emit(sizeSSA + " = arith.constant 4 : i64"); // 4 bytes for i32
+        
+        std::string memSSA = nextSSA();
+        emit(memSSA + " = func.call @cs_alloc(" + sizeSSA + ") : (i64) -> !llvm.ptr");
+        
+        emit("llvm.store " + valSSA + ", " + memSSA + " : i32, !llvm.ptr");
+        
+        std::string funcSSA = nextSSA();
+        emit(funcSSA + " = func.constant @" + wrapperName + " : (!llvm.ptr) -> ()");
+        
+        emit("func.call @cs_spawn(" + funcSSA + ", " + memSSA + ") : ((!llvm.ptr)->(), !llvm.ptr) -> ()");
+        
     }
 }
 
@@ -221,6 +295,22 @@ std::string MLIRGenerator::visitExpr(const Expr& expr) {
             funcName = v->name;
         }
         
+        if (funcName == "print") {
+             // Handle builtin print
+             if (call->args.size() != 1) {
+                 // Should have been caught by semantics but we are weak there
+             }
+             std::string val = visitExpr(*call->args[0]->expr);
+             emit("func.call @cs_print_int(" + val + ") : (i32) -> ()");
+             return nextSSA(); // Print returns void/undef?
+        }
+        
+        if (funcName == "sleep") {
+             std::string val = visitExpr(*call->args[0]->expr);
+             emit("func.call @cs_sleep(" + val + ") : (i32) -> ()");
+             return nextSSA();
+        }
+        
         std::stringstream args;
         for (size_t i = 0; i < call->args.size(); ++i) {
             if (i > 0) args << ", ";
@@ -250,7 +340,7 @@ std::string MLIRGenerator::visitExpr(const Expr& expr) {
         }
         argTypes << ")";
         
-        emit(res + " = call @" + funcName + "(" + args.str() + ") : " + argTypes.str() + " -> i32");
+        emit(res + " = func.call @" + funcName + "(" + args.str() + ") : " + argTypes.str() + " -> i32");
         return res;
     }
     return "%undef";

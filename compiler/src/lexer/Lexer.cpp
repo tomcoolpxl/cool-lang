@@ -74,6 +74,8 @@ Token Lexer::scanToken() {
         case '"': return scanString();
         case '\n': 
             atStartOfLine = true;
+            line++;
+            column = 1;
             return makeToken(TokenType::NewLine, "\n");
     }
 
@@ -152,6 +154,7 @@ Token Lexer::scanIdentifier() {
     if (text == "const") return makeToken(TokenType::Const, text);
     if (text == "import") return makeToken(TokenType::Import, text);
     if (text == "as") return makeToken(TokenType::As, text);
+    if (text == "spawn") return makeToken(TokenType::Spawn, text);
     
     return makeToken(TokenType::Identifier, text);
 }

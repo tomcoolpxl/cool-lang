@@ -27,10 +27,17 @@ struct Type {
     
     // Returns true if this type is a View (Transient) and cannot escape the stack.
     virtual bool isTransient() const { return false; }
+    
+    // Returns true if this type allows implicit copy (i.e. not linear).
+    virtual bool isCopy() const { return false; }
 };
 
 struct PrimitiveType : Type {
     PrimitiveType(std::string n) : Type(TypeKind::Primitive, n) {}
+    
+    bool isCopy() const override {
+        return name == "i32" || name == "i64" || name == "bool" || name == "void";
+    }
 };
 
 struct StructType : Type {

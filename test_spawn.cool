@@ -1,0 +1,8 @@
+func worker(x: i32) -> i32:
+    print(x)
+    return x
+
+func main() -> i32:
+    spawn worker(42)
+    sleep(100) # Sleep 100ms
+    return 0

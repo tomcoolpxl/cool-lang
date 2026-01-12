@@ -15,8 +15,10 @@ public:
 
 private:
     std::stringstream output;
+    std::stringstream wrappers; // For generated wrapper functions
     int ssaCounter = 0;
     int indentLevel = 0;
+    int wrapperCounter = 0; // Unique ID for wrappers
     
     // Maps variable names to their current SSA value definition
     std::vector<std::unordered_map<std::string, std::string>> symbolStack;

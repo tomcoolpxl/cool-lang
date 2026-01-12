@@ -35,6 +35,18 @@ Token Parser::consume(TokenType type, std::string message) {
     exit(1); 
 }
 
+void Parser::consumeTerminator() {
+    if (check(TokenType::NewLine)) {
+        advance();
+    } else if (check(TokenType::Dedent) || check(TokenType::EndOfFile)) {
+        // These tokens terminate a statement implicitly by ending the block/file.
+        // We do NOT consume them here, so the block parser can handle them.
+    } else {
+        std::cerr << "Parser Error: Expected newline or end of block at line " << current.line << ", got " << tokenTypeToString(current.type) << std::endl;
+        exit(1);
+    }
+}
+
 std::unique_ptr<Program> Parser::parseProgram() {
     auto prog = std::make_unique<Program>();
     while (!check(TokenType::EndOfFile)) {
@@ -137,18 +149,19 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     if (check(TokenType::Let)) return parseLetStmt();
     if (check(TokenType::If)) return parseIfStmt();
     if (check(TokenType::While)) return parseWhileStmt();
+    if (check(TokenType::Spawn)) return parseSpawnStmt();
 
     if (match(TokenType::Return)) {
         std::unique_ptr<Expr> value = nullptr;
-        if (!check(TokenType::NewLine)) {
+        if (!check(TokenType::NewLine) && !check(TokenType::Dedent) && !check(TokenType::EndOfFile)) {
             value = parseExpression();
         }
-        consume(TokenType::NewLine, "Expected newline after return");
+        consumeTerminator();
         return std::make_unique<ReturnStmt>(std::move(value));
     }
     
     auto expr = parseExpression();
-    consume(TokenType::NewLine, "Expected newline after expression");
+    consumeTerminator();
     return std::make_unique<ExprStmt>(std::move(expr));
 }
 
@@ -157,7 +170,7 @@ std::unique_ptr<Stmt> Parser::parseLetStmt() {
     Token name = consume(TokenType::Identifier, "Expected variable name");
     consume(TokenType::Equal, "Expected '='");
     auto init = parseExpression();
-    consume(TokenType::NewLine, "Expected newline after let");
+    consumeTerminator();
     return std::make_unique<LetStmt>(name.text, std::move(init));
 }
 
@@ -187,6 +200,34 @@ std::unique_ptr<Stmt> Parser::parseWhileStmt() {
     consume(TokenType::NewLine, "Expected newline after while header");
     auto body = parseBlock();
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Stmt> Parser::parseSpawnStmt() {
+    consume(TokenType::Spawn, "Expected 'spawn'");
+    auto expr = parseExpression();
+    
+    // Ensure expr is a CallExpr
+    auto call = dynamic_cast<CallExpr*>(expr.get());
+    if (!call) {
+        // Since expr is unique_ptr, dynamic_cast on get() doesn't give ownership.
+        // We need to release ownership if we cast? 
+        // No, we can't cast unique_ptr directly easily down.
+        // We have to check then release/reset.
+        // Actually, we can check expr->kind or try cast.
+        // But for AST node types in C++, usually we rely on RTTI or Visitor.
+        // Here we just check.
+        std::cerr << "Parser Error: spawn must be followed by a function call." << std::endl;
+        exit(1);
+    }
+    
+    // Ownership transfer trickery
+    // We want to turn unique_ptr<Expr> into unique_ptr<CallExpr>
+    // Safe because we verified it is a CallExpr
+    expr.release();
+    std::unique_ptr<CallExpr> callPtr(call);
+    
+    consumeTerminator();
+    return std::make_unique<SpawnStmt>(std::move(callPtr));
 }
 
 std::unique_ptr<Expr> Parser::parseExpression() {

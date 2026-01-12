@@ -17,7 +17,7 @@ enum class TokenType {
     // Keywords
     Fn, Struct, Protocol, Let, If, Else, Elif, While, For, Match, Return,
     Move, View, Inout, Copy, Shared, Unsafe,
-    Try, Const, Import, As, Class, // Class? No, Struct.
+    Try, Const, Import, As, Class, Spawn,
     
     // Operators
     Plus, Minus, Star, Slash, 

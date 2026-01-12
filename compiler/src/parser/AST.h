@@ -167,6 +167,17 @@ struct WhileStmt : Stmt {
     }
 };
 
+struct SpawnStmt : Stmt {
+    std::unique_ptr<CallExpr> call;
+    
+    SpawnStmt(std::unique_ptr<CallExpr> c) : call(std::move(c)) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "Spawn\n";
+        call->print(indent + 2);
+    }
+};
+
 // --- Declarations ---
 struct Param {
     std::string name;

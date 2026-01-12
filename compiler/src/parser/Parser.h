@@ -18,6 +18,7 @@ private:
     bool match(TokenType type); 
     bool check(TokenType type); 
     Token consume(TokenType type, std::string message); 
+    void consumeTerminator();
 
     std::unique_ptr<FunctionDecl> parseFunction();
     std::unique_ptr<StructDecl> parseStruct();
@@ -25,6 +26,7 @@ private:
     std::unique_ptr<Stmt> parseLetStmt();
     std::unique_ptr<Stmt> parseIfStmt();
     std::unique_ptr<Stmt> parseWhileStmt();
+    std::unique_ptr<Stmt> parseSpawnStmt();
     std::unique_ptr<Expr> parseExpression();
     std::unique_ptr<Expr> parseLogicalOr();
     std::unique_ptr<Expr> parseLogicalAnd();
