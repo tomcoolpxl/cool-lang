@@ -14,6 +14,7 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 | **2** | **Ownership** | Move/View Validation (No-Escape) | [x] |
 | **3** | **MLIR/LLVM** | `cool` Dialect, Lowering to LLVM IR, `cs_alloc` | [x] |
 | **4** | **Runtime** | C-based Channels, Task Spawning, Static Linker | [x] |
+| **4** | **Syntax** | Function keyword standardization to `fn` | [x] |
 
 ---
 

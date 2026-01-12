@@ -16,6 +16,9 @@ std::string MLIRGenerator::generate(const Program& program) {
     emit("func.func private @cs_spawn((!llvm.ptr)->(), !llvm.ptr) -> ()");
     emit("func.func private @cs_print_int(i32) -> ()");
     emit("func.func private @cs_sleep(i32) -> ()");
+    emit("func.func private @cs_chan_create(i64) -> !llvm.ptr");
+    emit("func.func private @cs_chan_send(!llvm.ptr, !llvm.ptr) -> ()");
+    emit("func.func private @cs_chan_receive(!llvm.ptr) -> !llvm.ptr");
     
     visitProgram(program);
     
@@ -102,10 +105,26 @@ void MLIRGenerator::visitFunction(const FunctionDecl& func) {
 
     visitBlock(func.body);
     
-    // Ensure return if void and missing
-    // (Simplification: if last stmt wasn't return)
-    if (func.returnType.empty() || func.returnType == "void") {
-        emit("func.return");
+    // Ensure a proper terminator (func.return or similar)
+    // Check if last statement is already a return
+    bool lastStmtIsReturn = false;
+    if (!func.body.empty()) {
+        lastStmtIsReturn = dynamic_cast<const ReturnStmt*>(func.body.back().get()) != nullptr;
+    }
+    
+    // If the last statement is not a return, emit one
+    // This handles both void functions and functions that should have returned
+    // (semantic analyzer should catch unintended missing returns)
+    if (!lastStmtIsReturn) {
+        // For void or no-return functions, emit plain func.return
+        if (func.returnType.empty() || func.returnType == "void") {
+            emit("func.return");
+        } else {
+            // For functions with return type, emit a default return
+            // This shouldn't happen if semantic analyzer is doing its job,
+            // but we do it defensively to ensure valid MLIR
+            emit("func.return %0 : i32"); // Default mock
+        }
     }
     
     exitScope();
@@ -290,6 +309,60 @@ std::string MLIRGenerator::visitExpr(const Expr& expr) {
         }
         return res;
     } else if (auto call = dynamic_cast<const CallExpr*>(&expr)) {
+        // 1. Channel Constructor: Channel[T](capacity)
+        if (auto idx = dynamic_cast<const IndexExpr*>(call->callee.get())) {
+            // Assume it's Channel constructor if Semantics passed
+            // Verify? Semantics checked it.
+            // Argument is capacity.
+            std::string capSSA = visitExpr(*call->args[0]->expr);
+            // Convert i32 to i64 for size_t
+            std::string cap64 = nextSSA();
+            emit(cap64 + " = arith.extsi " + capSSA + " : i32 to i64");
+            
+            std::string res = nextSSA();
+            emit(res + " = func.call @cs_chan_create(" + cap64 + ") : (i64) -> !llvm.ptr");
+            return res;
+        }
+
+        // 2. Method Calls: ch.send(val), ch.receive()
+        if (auto mem = dynamic_cast<const MemberAccessExpr*>(call->callee.get())) {
+            if (auto type = call->callee->resolvedType) { // Semantic analyzer sets this? No, Semantics sets it on CallExpr, not MemberAccess usually.
+                // Wait, SemanticAnalyzer visits MemberAccess too.
+                // But resolvedType is on the Expr node.
+                // Let's check call->resolvedType?
+                // Semantics sets resolvedType on the CallExpr to Void (for send) or T (for receive).
+                // We need to know if it's a Channel.
+                // Check mem->object->resolvedType.
+            }
+            
+            // Re-resolve or trust semantics?
+            // We can trust semantics pass has verified it's a Channel if member is send/receive.
+            // But we need the object SSA.
+            std::string objSSA = visitExpr(*mem->object);
+            
+            if (mem->member == "send") {
+                std::string valSSA = visitExpr(*call->args[0]->expr);
+                // Box it (i32 -> ptr)
+                std::string sizeSSA = nextSSA();
+                emit(sizeSSA + " = arith.constant 4 : i64");
+                std::string boxSSA = nextSSA();
+                emit(boxSSA + " = func.call @cs_alloc(" + sizeSSA + ") : (i64) -> !llvm.ptr");
+                emit("llvm.store " + valSSA + ", " + boxSSA + " : i32, !llvm.ptr");
+                
+                emit("func.call @cs_chan_send(" + objSSA + ", " + boxSSA + ") : (!llvm.ptr, !llvm.ptr) -> ()");
+                return nextSSA(); // Void
+            } else if (mem->member == "receive") {
+                std::string boxSSA = nextSSA();
+                emit(boxSSA + " = func.call @cs_chan_receive(" + objSSA + ") : (!llvm.ptr) -> !llvm.ptr");
+                
+                // Unbox
+                std::string valSSA = nextSSA();
+                emit(valSSA + " = llvm.load " + boxSSA + " : !llvm.ptr -> i32");
+                emit("func.call @cs_free(" + boxSSA + ") : (!llvm.ptr) -> ()");
+                return valSSA;
+            }
+        }
+
         std::string funcName = "unknown";
         if (auto v = dynamic_cast<const VariableExpr*>(call->callee.get())) {
             funcName = v->name;

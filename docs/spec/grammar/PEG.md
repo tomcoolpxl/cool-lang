@@ -134,5 +134,5 @@ Coolscript lowers this grammar into a custom MLIR Dialect (`cool`).
 | --- | --- | --- |
 | `move x` | `cool.move %x` | Invalidates the SSA value for `%x` in the IR. |
 | `view x` | `cool.borrow %x` | Passes a pointer with a scoped lifetime attribute. |
-| `spawn func()` | `cool.task_spawn @func` | Allocates a fixed-stack isolate and transfers owned registers. |
+| `spawn fn()` | `cool.task_spawn @fn` | Allocates a fixed-stack isolate and transfers owned registers. |
 

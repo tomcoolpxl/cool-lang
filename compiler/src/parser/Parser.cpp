@@ -299,6 +299,10 @@ std::unique_ptr<Expr> Parser::parsePostfix() {
         } else if (match(TokenType::Dot)) {
             Token member = consume(TokenType::Identifier, "Expected member name after '.'");
             expr = std::make_unique<MemberAccessExpr>(std::move(expr), member.text);
+        } else if (match(TokenType::LBracket)) {
+            auto index = parseExpression();
+            consume(TokenType::RBracket, "Expected ']'");
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
         } else {
             break;
         }

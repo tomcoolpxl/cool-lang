@@ -1,9 +1,12 @@
 # Coolscript Implementation Tracking
 
+## Recent Updates
+- **2026-01-12:** Updated function keyword from `func` to `fn` across all documentation, examples, and test files to align with official grammar specification and modern language design (Rust/Kotlin style).
+
 ## Current Status
 **Phase:** Milestone 1 (Week 4)
 **Focus:** Runtime & Concurrency (C Runtime, Channels, Task Spawning).
-**Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape), Textual MLIR Codegen, LLVM Integration & Object File Generation, Basic Runtime (Alloc/Spawn/Print/Sleep).
+**Completed:** Lexer, Parser (Full), AST, Semantic Analysis (Linear Types & No-Escape), Textual MLIR Codegen, LLVM Integration & Object File Generation, Basic Runtime (Alloc/Spawn/Print/Sleep), Function keyword standardization to `fn`.
 **Active Tasks:** Exposing Channels to Coolscript.
 
 ## Dashboards

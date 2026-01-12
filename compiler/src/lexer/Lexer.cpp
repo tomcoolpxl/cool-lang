@@ -133,7 +133,7 @@ Token Lexer::scanIdentifier() {
     std::string text = source.substr(start, position - start);
     
     // Keyword check
-    if (text == "func") return makeToken(TokenType::Fn, text);
+    if (text == "fn") return makeToken(TokenType::Fn, text);
     if (text == "struct") return makeToken(TokenType::Struct, text);
     if (text == "protocol") return makeToken(TokenType::Protocol, text);
     if (text == "let") return makeToken(TokenType::Let, text);

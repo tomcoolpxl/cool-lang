@@ -70,6 +70,9 @@ std::shared_ptr<Type> SemanticAnalyzer::resolveType(const std::string& name) {
     if (name.find("view[") == 0 && name.back() == ']') {
         return TypeRegistry::View(resolveType(name.substr(5, name.size() - 6)));
     }
+    if (name.find("Channel[") == 0 && name.back() == ']') {
+        return std::make_shared<ChannelType>(resolveType(name.substr(8, name.size() - 9)));
+    }
 
     auto it = typeRegistry.find(name);
     if (it != typeRegistry.end()) {
@@ -87,6 +90,21 @@ void SemanticAnalyzer::visitFunction(const FunctionDecl& func) {
         symbolTable.define(param.name, resolveType(param.typeName));
     }
     visitBlock(func.body);
+    
+    // Check: if function has non-void return type, it must end with a return
+    if (!func.returnType.empty() && func.returnType != "void") {
+        bool endsWithReturn = false;
+        if (!func.body.empty()) {
+            if (dynamic_cast<const ReturnStmt*>(func.body.back().get()) != nullptr) {
+                endsWithReturn = true;
+            }
+        }
+        if (!endsWithReturn) {
+            throw std::runtime_error("Function '" + func.name + "' with return type '" + func.returnType + 
+                                   "' must end with a return statement");
+        }
+    }
+    
     symbolTable.exitScope();
 }
 
@@ -294,8 +312,61 @@ std::shared_ptr<Type> SemanticAnalyzer::visitExpr(const Expr& expr) {
         } else {
             resultType = lhs;
         }
+    } else if (auto indexExpr = dynamic_cast<const IndexExpr*>(&expr)) {
+        // Handle Channel[T] as a type expression
+        auto obj = dynamic_cast<const VariableExpr*>(indexExpr->object.get());
+        if (obj && obj->name == "Channel") {
+            auto idx = dynamic_cast<const VariableExpr*>(indexExpr->index.get());
+            if (idx) {
+                auto inner = resolveType(idx->name);
+                resultType = std::make_shared<ChannelType>(inner);
+            }
+        }
     } else if (auto call = dynamic_cast<const CallExpr*>(&expr)) {
         std::string funcName;
+        
+        // Handle Constructor: Channel[T](...)
+        if (auto idx = dynamic_cast<const IndexExpr*>(call->callee.get())) {
+            visitExpr(*idx); // Resolve the type
+            auto type = idx->resolvedType;
+            if (auto chanType = std::dynamic_pointer_cast<ChannelType>(type)) {
+                // It is a Channel constructor
+                // Check args: capacity (i32)
+                if (call->args.size() != 1) throw std::runtime_error("Channel constructor expects capacity");
+                visitExpr(*call->args[0]->expr); 
+                // Return the Channel type
+                resultType = chanType;
+                mutableExpr.resolvedType = resultType;
+                return resultType;
+            }
+        }
+
+        // Method calls: ch.send(...)
+        if (auto mem = dynamic_cast<const MemberAccessExpr*>(call->callee.get())) {
+            auto objType = visitExpr(*mem->object);
+            if (auto view = std::dynamic_pointer_cast<ViewType>(objType)) {
+                objType = view->innerType;
+            }
+            
+            if (auto chanType = std::dynamic_pointer_cast<ChannelType>(objType)) {
+                if (mem->member == "send") {
+                    if (call->args.size() != 1) throw std::runtime_error("send takes 1 argument");
+                    auto argType = visitExpr(*call->args[0]->expr);
+                    // Check type match
+                    if (argType->toString() != chanType->innerType->toString()) {
+                         throw std::runtime_error("Channel type mismatch on send");
+                    }
+                    resultType = TypeRegistry::Void();
+                } else if (mem->member == "receive") {
+                    if (call->args.size() != 0) throw std::runtime_error("receive takes 0 arguments");
+                    resultType = chanType->innerType;
+                } else {
+                    throw std::runtime_error("Unknown method on Channel: " + mem->member);
+                }
+                mutableExpr.resolvedType = resultType;
+                return resultType;
+            }
+        }
         
         // simple case: direct function call
         if (auto var = dynamic_cast<const VariableExpr*>(call->callee.get())) {

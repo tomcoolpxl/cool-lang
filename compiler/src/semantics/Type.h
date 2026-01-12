@@ -68,6 +68,15 @@ struct ViewType : Type {
     bool isTransient() const override { return true; }
 };
 
+struct ChannelType : Type {
+    std::shared_ptr<Type> innerType;
+    
+    ChannelType(std::shared_ptr<Type> inner) 
+        : Type(TypeKind::Generic, "Channel[" + inner->toString() + "]"), innerType(inner) {}
+        
+    bool isCopy() const override { return false; }
+};
+
 class TypeRegistry {
 public:
     static std::shared_ptr<Type> Int32() { static auto t = std::make_shared<PrimitiveType>("i32"); return t; }

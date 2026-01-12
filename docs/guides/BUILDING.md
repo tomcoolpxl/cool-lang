@@ -29,7 +29,7 @@ To build a Coolscript file into an executable:
 1.  Create a file named `hello.cool`:
 
     ```python
-    func main() -> i32:
+    fn main() -> i32:
         print(42)
         return 0
     ```

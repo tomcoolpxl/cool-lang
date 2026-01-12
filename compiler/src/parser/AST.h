@@ -82,6 +82,20 @@ struct MemberAccessExpr : Expr {
     }
 };
 
+struct IndexExpr : Expr {
+    std::unique_ptr<Expr> object;
+    std::unique_ptr<Expr> index;
+    
+    IndexExpr(std::unique_ptr<Expr> o, std::unique_ptr<Expr> i) : object(std::move(o)), index(std::move(i)) {}
+    
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "IndexExpr:\n";
+        object->print(indent + 2);
+        std::cout << std::string(indent + 2, ' ') << "Index:\n";
+        index->print(indent + 4);
+    }
+};
+
 struct CallExpr : Expr {
     std::unique_ptr<Expr> callee;
     std::vector<std::unique_ptr<Argument>> args;

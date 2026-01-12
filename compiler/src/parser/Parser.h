@@ -19,6 +19,8 @@ private:
     bool check(TokenType type); 
     Token consume(TokenType type, std::string message); 
     void consumeTerminator();
+    
+    std::string parseType();
 
     std::unique_ptr<FunctionDecl> parseFunction();
     std::unique_ptr<StructDecl> parseStruct();

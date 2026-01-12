@@ -28,12 +28,12 @@ for url in ["site1.com", "site2.com"]:
 Go is simple to deploy and concurrent, but you can accidentally share pointers between Goroutines, leading to data races that are only caught at runtime (if the race detector is on).
 
 ```go
-func crawl(url string, db *Database) {
+fn crawl(url string, db *Database) {
     data := fetch(url)
     db.Save(data) // Shared pointer access; needs Mutex/Lock
 }
 
-func main() {
+fn main() {
     db := OpenDB()
     for _, url := range urls {
         go crawl(url, db) // Hidden pointer sharing
