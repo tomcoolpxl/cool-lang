@@ -1,144 +1,111 @@
-This initial test suite, `tests/ownership_tests.cool`, is designed to verify that the compiler's semantic analyzer correctly enforces the **Move/View** rules and the **No-Escape Rule**. Each test case represents a fundamental memory safety requirement.
+
+# TESTING.md
+
+## Overview
+This document describes the testing setup for the `cool-lang` project, including the distinction between MLIR-based verification and execution-based testing, and provides instructions for running and writing tests.
 
 ---
 
-## Ownership and Memory Safety Test Suite
+## Test Types
 
-### 1. Basic Ownership Violations
+### 1. MLIR Verification
+- **Purpose:** Ensures that the compiler generates correct MLIR (Multi-Level Intermediate Representation) code from Cool source files.
+- **Location:** `compiler/tests/mlir_verification/`
+- **How it works:**
+    - Source files are compiled to MLIR.
+    - The output MLIR is compared against expected results (golden files).
+    - Useful for verifying code generation, optimizations, and IR transformations.
+- **How to run:**
+    - Use the provided test runner or CMake targets (see below).
+    - Check output against golden files for differences.
 
-These tests verify that the compiler correctly "burns" variables and prevents "Use-After-Move" errors.
+### 2. Execution Verification
+- **Purpose:** Validates that compiled Cool programs execute correctly and produce expected results.
+- **Location:** `compiler/tests/execution_verification/`
+- **How it works:**
+    - Source files are compiled and executed.
+    - The runtime output is compared to expected output.
+    - Useful for end-to-end testing of language features and runtime behavior.
+- **How to run:**
+    - Use the test runner or CMake targets.
+    - Output is checked for correctness.
 
-```python
-# test_invalid_use_after_move.cool
-fn consume_string(s: move str):
-    print(s)
-
-fn main():
-    let name = "Coolscript"
-    consume_string(move name)
-    
-    # EXPECTED ERROR: Variable 'name' is burned. 
-    # Attempted access at line 9.
-    print(name) 
-
-```
-
-### 2. The No-Escape Rule
-
-This test ensures that a `view` (borrow) cannot be stored in a long-lived structure or returned from a scope where its owner died.
-
-```python
-# test_view_escape.cool
-struct DataBox:
-    # EXPECTED ERROR: Structs cannot contain 'view' types.
-    # DataBox must own its data.
-    content: view str 
-
-fn get_leaked_view() -> view str:
-    let local_data = "Temporary"
-    let v: view str = local_data
-    
-    # EXPECTED ERROR: View of 'local_data' escapes its scope.
-    return v 
-
-```
-
-### 3. Loop Ownership Logic
-
-This test verifies that the compiler understands ownership transitions within loops.
-
-```python
-# test_loop_move.cool
-fn main():
-    let items: List[str] = ["A", "B", "C"]
-    let single_item = "D"
-
-    for i in 0..3:
-        # EXPECTED ERROR: 'single_item' is moved in the first iteration.
-        # It is unavailable for subsequent iterations.
-        process(move single_item) 
-
-    # CORRECT PATTERN:
-    for item in items:
-        # This is safe because 'item' is a view provided by the iterator.
-        process_view(item) 
-
-```
-
-### 4. Structured Concurrency (Spawn)
-
-This test ensures that data is moved, not shared, when spawning background tasks.
-
-```python
-# test_spawn_safety.cool
-fn worker(data: move List[i32]):
-    pass
-
-fn main():
-    let shared_data = [1, 2, 3]
-    
-    # Pass 1: Correct Move
-    spawn worker(move shared_data)
-    
-    # Pass 2: Attempting to access data after spawning the task
-    # EXPECTED ERROR: 'shared_data' was moved into background task.
-    print(len(shared_data)) 
-
-```
-
-### 5. Optional Unwrapping
-
-This test verifies that the compiler forces the developer to check `opt[T]` types before access.
-
-```python
-# test_optional_access.cool
-fn main():
-    let name: opt[str] = None
-    
-    # EXPECTED ERROR: Type 'opt[str]' has no attribute 'len'.
-    # print(name.len()) 
-
-    # CORRECT PATTERN:
-    if let n = name:
-        print(n.len()) # Safe
-    else:
-        print("Empty")
-
-```
+### 3. Unit and Integration Tests
+- **Purpose:** Test individual components (lexer, parser, codegen, semantics) and their integration.
+- **Location:** `compiler/tests/` (e.g., `test_lexer.cpp`, `test_parser.cpp`, etc.)
+- **How to run:**
+    - Use CMake or the test runner to execute all or specific tests.
 
 ---
 
-## Testing CLI Integration
+## Running Tests
 
-The compiler toolchain will use these files to verify its own correctness during development.
+### Using CMake
+1. **Configure the project:**
+     ```bash
+     cmake -S . -B build
+     ```
+2. **Build tests:**
+     ```bash
+     cmake --build build --target tests
+     ```
+3. **Run all tests:**
+     ```bash
+     cd build
+     ctest
+     ```
+     Or run specific tests:
+     ```bash
+     ctest -R <test_name>
+     ```
 
-```bash
-# Running the test suite
-cool check tests/ownership_tests.cool
-
-```
-
-### Traceback Logic
-
-When the compiler finds an error (e.g., in `test_invalid_use_after_move.cool`), it should produce a "Lifetime Traceback" to help the developer:
-
-> **Ownership Error: Use of burned variable 'name'**
-> * **Line 7**: `let name = "Coolscript"` (Initialized as owner)
-> * **Line 8**: `consume_string(move name)` (Ownership moved here)
-> * **Line 11**: `print(name)` (Invalid access of burned variable)
-> 
-> 
+### Using Test Runner
+- Some tests may have custom runners or scripts in the `tests/` directory.
+- Refer to `docs/internals/TESTING.md` for advanced usage or troubleshooting.
 
 ---
 
-## Summary of Compiler Requirements for the Test Suite
+## Writing New Tests
 
-| Test Category | Requirement | Implementation Strategy |
-| --- | --- | --- |
-| **Linearity** | No use-after-move | Track "Burned" state in the Symbol Table. |
-| **Regions** | No view escape | Forbid `view` in structs; restrict return types. |
-| **Exhaustiveness** | Match/Opt handling | Verify all paths in the AST for `Result`/`opt`. |
-| **Isolation** | Spawn moves | Ensure all arguments to `spawn` are `move` or `copy`. |
+### MLIR Verification
+- Add new Cool source files and expected MLIR output to `mlir_verification/`.
+- Update golden files as needed.
+- Ensure new features are covered.
 
-This concludes the initial design phase of Coolscript. You now have a full specification, a module system, a standard library draft, a formal grammar, and a test suite to validate your implementation.
+### Execution Verification
+- Add new source files and expected output to `execution_verification/`.
+- Cover edge cases and runtime scenarios.
+
+### Unit/Integration Tests
+- Add or update C++ test files in `compiler/tests/`.
+- Use the provided test framework (`TestFramework.h`).
+
+---
+
+## Directory Structure
+- `compiler/tests/` — C++ unit/integration tests
+- `compiler/tests/mlir_verification/` — MLIR golden tests
+- `compiler/tests/execution_verification/` — Execution output tests
+- `runtime/tests/` — Runtime-specific tests
+
+---
+
+## Troubleshooting
+- If tests fail, check build logs and output files for details.
+- For MLIR mismatches, compare generated and golden files.
+- For execution failures, check runtime output and error messages.
+
+---
+
+## Additional Resources
+- See `docs/internals/TESTING.md` for deeper technical details.
+- Refer to `docs/guides/BUILDING.md` for build setup.
+- For bug reporting, use `docs/internals/BUG_REPORT_TEMPLATE.md`.
+
+---
+
+## Contact
+For questions or help, reach out via repository issues or contact maintainers listed in `README.md`.
+---
+
 
