@@ -91,6 +91,7 @@ We are currently in the **Initial Implementation Phase**. The following componen
 1. **PEG Grammar**: Indentation-aware parser.
 2. **MLIR Dialect**: Ownership and Linearity verification passes.
 3. **C Runtime**: High-performance channel and task management.
+4. **LLVM Backend**: Compiles to native object files.
 
 ---
 

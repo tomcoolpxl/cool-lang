@@ -190,11 +190,68 @@ std::unique_ptr<Stmt> Parser::parseWhileStmt() {
 }
 
 std::unique_ptr<Expr> Parser::parseExpression() {
-    return parsePostfix(); 
+    return parseLogicalOr(); 
+}
+
+std::unique_ptr<Expr> Parser::parseLogicalOr() {
+    auto expr = parseLogicalAnd();
+    // TODO: Add 'or' token support if needed, assuming no 'or' keyword token yet in Lexer for now except Identifier?
+    // Lexer doesn't have Or/And tokens yet in TokenType enum?
+    // TokenType has no And/Or. We'll skip logical ops for now or check Identifier "or".
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::parseLogicalAnd() {
+    return parseEquality();
+}
+
+std::unique_ptr<Expr> Parser::parseEquality() {
+    auto expr = parseComparison();
+    while (check(TokenType::EqualEqual) || check(TokenType::BangEqual)) {
+        Token op = current;
+        advance();
+        auto right = parseComparison();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op.text, std::move(right));
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::parseComparison() {
+    auto expr = parseTerm();
+    while (check(TokenType::Less) || check(TokenType::LessEqual) || 
+           check(TokenType::Greater) || check(TokenType::GreaterEqual)) {
+        Token op = current;
+        advance();
+        auto right = parseTerm();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op.text, std::move(right));
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::parseTerm() {
+    auto expr = parseFactor();
+    while (check(TokenType::Plus) || check(TokenType::Minus)) {
+        Token op = current;
+        advance();
+        auto right = parseFactor();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op.text, std::move(right));
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::parseFactor() {
+    auto expr = parsePostfix();
+    while (check(TokenType::Star) || check(TokenType::Slash)) {
+        Token op = current;
+        advance();
+        auto right = parsePostfix();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op.text, std::move(right));
+    }
+    return expr;
 }
 
 std::unique_ptr<Expr> Parser::parsePostfix() {
-    auto expr = parseAtomic();
+    auto expr = parsePrimary();
     while (true) {
         if (check(TokenType::LParen)) {
             expr = parseCall(std::move(expr));
@@ -208,7 +265,7 @@ std::unique_ptr<Expr> Parser::parsePostfix() {
     return expr;
 }
 
-std::unique_ptr<Expr> Parser::parseAtomic() {
+std::unique_ptr<Expr> Parser::parsePrimary() {
     if (check(TokenType::IntegerLiteral)) {
         Token t = current;
         advance();
@@ -218,6 +275,11 @@ std::unique_ptr<Expr> Parser::parseAtomic() {
         Token t = current;
         advance();
         return std::make_unique<VariableExpr>(t.text);
+    }
+    if (match(TokenType::LParen)) {
+        auto expr = parseExpression();
+        consume(TokenType::RParen, "Expected ')' after expression");
+        return expr; // Grouping? We don't have GroupingExpr, just return inner
     }
     std::cerr << "Unexpected token in expression: " << tokenTypeToString(current.type) << " (" << current.text << ")" << std::endl;
     exit(1);

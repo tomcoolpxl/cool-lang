@@ -55,6 +55,21 @@ struct VariableExpr : Expr {
     }
 };
 
+struct BinaryExpr : Expr {
+    std::unique_ptr<Expr> left;
+    std::string op;
+    std::unique_ptr<Expr> right;
+    
+    BinaryExpr(std::unique_ptr<Expr> l, std::string o, std::unique_ptr<Expr> r) 
+        : left(std::move(l)), op(o), right(std::move(r)) {}
+        
+    void print(int indent) const override {
+        std::cout << std::string(indent, ' ') << "BinaryExpr: " << op << "\n";
+        left->print(indent + 2);
+        right->print(indent + 2);
+    }
+};
+
 struct MemberAccessExpr : Expr {
     std::unique_ptr<Expr> object;
     std::string member;

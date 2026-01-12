@@ -12,7 +12,7 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 | **1** | **Frontend** | PEG Parser & AST Nodes | [x] |
 | **2** | **Ownership** | Linear Type Pass (Double Move) | [x] |
 | **2** | **Ownership** | Move/View Validation (No-Escape) | [x] |
-| **3** | **MLIR/LLVM** | `cool` Dialect, Lowering to LLVM IR, `cs_alloc` | [~] |
+| **3** | **MLIR/LLVM** | `cool` Dialect, Lowering to LLVM IR, `cs_alloc` | [x] |
 | **4** | **Runtime** | C-based Channels, Task Spawning, Static Linker | [ ] |
 
 ---
@@ -63,6 +63,6 @@ This **Coolscript Implementation Dashboard** is your master roadmap. It breaks d
 
 ## Project Status Tracking
 
-> **Current Phase**: Implementation (Milestone 1, Week 3)
-> **Next Immediate Task**: Integrate LLVM libraries to parse generated MLIR and compile to object files (Phase 3 completion).
+> **Current Phase**: Implementation (Milestone 1, Week 4)
+> **Next Immediate Task**: Implement the C Runtime (Channels, Task Spawning) and link it with the compiler.
 

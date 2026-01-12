@@ -26,8 +26,14 @@ private:
     std::unique_ptr<Stmt> parseIfStmt();
     std::unique_ptr<Stmt> parseWhileStmt();
     std::unique_ptr<Expr> parseExpression();
-    std::unique_ptr<Expr> parseAtomic();
+    std::unique_ptr<Expr> parseLogicalOr();
+    std::unique_ptr<Expr> parseLogicalAnd();
+    std::unique_ptr<Expr> parseEquality();
+    std::unique_ptr<Expr> parseComparison();
+    std::unique_ptr<Expr> parseTerm();   // + -
+    std::unique_ptr<Expr> parseFactor(); // * /
     std::unique_ptr<Expr> parsePostfix();
+    std::unique_ptr<Expr> parsePrimary();
     std::unique_ptr<Expr> parseCall(std::unique_ptr<Expr> callee);
     
     std::vector<std::unique_ptr<Stmt>> parseBlock();

@@ -247,6 +247,22 @@ std::shared_ptr<Type> SemanticAnalyzer::visitExpr(const Expr& expr) {
                 throw std::runtime_error("Struct '" + structType->name + "' has no field '" + mem->member + "'");
             }
         }
+    } else if (auto bin = dynamic_cast<const BinaryExpr*>(&expr)) {
+        auto lhs = visitExpr(*bin->left);
+        auto rhs = visitExpr(*bin->right);
+        
+        if (lhs->toString() != rhs->toString()) {
+             // throw std::runtime_error("Type mismatch in binary expression: " + lhs->toString() + " vs " + rhs->toString());
+             // Forcing errors might break existing incomplete tests, so let's just warn or allow for now if needed.
+             // But strictness is good.
+             throw std::runtime_error("Type mismatch in binary expression: " + lhs->toString() + " " + bin->op + " " + rhs->toString());
+        }
+
+        if (bin->op == "==" || bin->op == "!=" || bin->op == "<" || bin->op == ">" || bin->op == "<=" || bin->op == ">=") {
+            resultType = TypeRegistry::Bool();
+        } else {
+            resultType = lhs;
+        }
     } else if (auto call = dynamic_cast<const CallExpr*>(&expr)) {
         std::string funcName;
         
