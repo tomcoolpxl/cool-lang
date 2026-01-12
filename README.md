@@ -63,23 +63,22 @@ This eliminates the need for complex lifetime annotations (`<'a>`).
 ```bash
 git clone https://github.com/user/coolscript
 cd coolscript
-make build
+# Build the compiler and runtime
+mkdir -p build && cmake -S . -B build && cmake --build build
+# Add wrapper to path (optional)
 export PATH=$PATH:$(pwd)/bin
-
 ```
 
 ### Your First Build
 
-```bash
-# Create a new module
-cool mod init my_project
+See the [Building Guide](docs/guides/BUILDING.md) for detailed instructions.
 
-# Build a static binary
+```bash
+# Build a static binary using the wrapper
 cool build main.cool -o my_app
 
 # Run it
 ./my_app
-
 ```
 
 ---

@@ -50,17 +50,27 @@ std::string readFile(const std::string& path) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Usage: coolc <file.cool>" << std::endl;
+        std::cerr << "Usage: coolc <file.cool> [-o output.o]" << std::endl;
         return 1;
     }
 
-    std::string source = readFile(argv[1]);
+    std::string inputFile = argv[1];
+    std::string outputFile = "output.o";
+    
+    for (int i = 2; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-o" && i + 1 < argc) {
+            outputFile = argv[++i];
+        }
+    }
+
+    std::string source = readFile(inputFile);
 
     // 1. Lex & Parse
     cool::Lexer lexer(source);
     cool::Parser parser(lexer);
     
-    std::cout << "-- Parsing --" << std::endl;
+    // std::cout << "-- Parsing --" << std::endl;
     auto program = parser.parseProgram();
     if (!program) {
         std::cerr << "Parsing failed." << std::endl;
@@ -68,7 +78,7 @@ int main(int argc, char** argv) {
     }
 
     // 2. Semantic Analysis
-    std::cout << "-- Analyzing --" << std::endl;
+    // std::cout << "-- Analyzing --" << std::endl;
     cool::SemanticAnalyzer analyzer;
     if (!analyzer.analyze(*program)) {
         std::cerr << "Semantic analysis failed." << std::endl;
@@ -76,15 +86,15 @@ int main(int argc, char** argv) {
     }
 
     // 3. Code Generation (MLIR)
-    std::cout << "-- Generating MLIR --" << std::endl;
+    // std::cout << "-- Generating MLIR --" << std::endl;
     cool::MLIRGenerator generator;
     std::string mlirCode = generator.generate(*program);
     
-    std::cout << "\n=== Generated MLIR ===\n" << std::endl;
-    std::cout << mlirCode << std::endl;
+    // std::cout << "\n=== Generated MLIR ===\n" << std::endl;
+    // std::cout << mlirCode << std::endl;
 
     // 4. Parse MLIR
-    std::cout << "-- Parsing MLIR with LLVM --" << std::endl;
+    // std::cout << "-- Parsing MLIR with LLVM --" << std::endl;
     mlir::MLIRContext context;
     context.allowUnregisteredDialects(true); 
     
@@ -106,10 +116,10 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    std::cout << "MLIR Parsed Successfully!" << std::endl;
+    // std::cout << "MLIR Parsed Successfully!" << std::endl;
 
     // 5. Lower to LLVM Dialect
-    std::cout << "-- Lowering to LLVM Dialect --" << std::endl;
+    // std::cout << "-- Lowering to LLVM Dialect --" << std::endl;
     mlir::PassManager pm(&context);
     pm.addPass(mlir::createSCFToControlFlowPass());
     pm.addPass(mlir::createArithToLLVMConversionPass());
@@ -123,7 +133,7 @@ int main(int argc, char** argv) {
     }
 
     // 6. Translate to LLVM IR
-    std::cout << "-- Translating to LLVM IR --" << std::endl;
+    // std::cout << "-- Translating to LLVM IR --" << std::endl;
     llvm::LLVMContext llvmContext;
     auto llvmModule = mlir::translateModuleToLLVMIR(*module, llvmContext);
     if (!llvmModule) {
@@ -132,7 +142,7 @@ int main(int argc, char** argv) {
     }
     
     // 7. Emit Object File
-    std::cout << "-- Emitting Object File --" << std::endl;
+    // std::cout << "-- Emitting Object File --" << std::endl;
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
@@ -157,7 +167,7 @@ int main(int argc, char** argv) {
     llvmModule->setDataLayout(targetMachine->createDataLayout());
     
     std::error_code ec;
-    llvm::raw_fd_ostream dest("output.o", ec, llvm::sys::fs::OF_None);
+    llvm::raw_fd_ostream dest(outputFile, ec, llvm::sys::fs::OF_None);
     if (ec) {
         std::cerr << "Could not open file: " << ec.message() << std::endl;
         return 1;
@@ -172,7 +182,7 @@ int main(int argc, char** argv) {
     pass.run(*llvmModule);
     dest.flush();
     
-    std::cout << "Success! Output written to output.o" << std::endl;
+    // std::cout << "Success! Output written to " << outputFile << std::endl;
 
     return 0;
 }
