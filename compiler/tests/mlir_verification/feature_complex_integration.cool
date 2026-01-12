@@ -1,0 +1,43 @@
+struct Point:
+    x: i32
+    y: i32
+
+struct Box:
+    tl: Point
+    br: Point
+
+fn point_sum(p: Point) -> i32:
+    let x = p.x
+    let y = p.y
+    return x + y
+
+fn box_area(b: Box) -> i32:
+    let x1 = b.tl.x
+    let y1 = b.tl.y
+    let x2 = b.br.x
+    let y2 = b.br.y
+    
+    let w = x2 - x1
+    let h = y2 - y1
+    let area = w + h
+    return area
+
+fn validate_box(b: Box):
+    let tl_sum = point_sum(b.tl)
+    let br_sum = point_sum(b.br)
+    let total = tl_sum + br_sum
+    
+    if total:
+        print(total)
+
+fn process_geometry():
+    let count = 0
+    
+    while count:
+        print(count)
+
+fn main() -> i32:
+    print(42)
+    print(100)
+    process_geometry()
+    return 0

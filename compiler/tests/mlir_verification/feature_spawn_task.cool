@@ -1,0 +1,9 @@
+fn worker(id: i32) -> i32:
+    print(id)
+    return id
+
+fn main() -> i32:
+    spawn worker(1)
+    spawn worker(2)
+    sleep(100)
+    return 0
